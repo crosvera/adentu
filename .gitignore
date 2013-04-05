@@ -1,0 +1,22 @@
+#Ignored files in Adentu
+
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+
+# Compiled source #
+###################
+*.o
+*.so
+adentu
+
+# Editor files #
+################
+.*.swp
+*~
+*.vim
+
+sandbox/
+uff/
