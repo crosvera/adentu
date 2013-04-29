@@ -9,6 +9,10 @@
 
 #include <glib.h>
 
+
+#define ADENTU_CUDA_THREADS 128
+
+
 #define CUDA_CALL(x)   {   const cudaError_t a = (x); \
                             if (a != cudaSuccess) { \
                                 g_warning ("CUDA Error: %s (err_num=%d)\n", cudaGetErrorString(a), a); \
@@ -27,6 +31,7 @@
 #endif
 
 
+__host__ void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n);
 
 
 #endif /*__ADENTU_CUDA_UTILS_H__ */

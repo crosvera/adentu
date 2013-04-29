@@ -27,7 +27,8 @@ typedef struct _AdentuAtom {
     int n;
     vec3f *pos;
     vec3f *vel;
-    int *lastTime;
+    vec3f *velRel;
+    //int *lastTime;
     int *nCol;
 
     double *mass;

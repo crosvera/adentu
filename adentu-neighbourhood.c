@@ -32,14 +32,14 @@ int adentu_neighbourhood_get_cell_from_atom (int atomId,
     cell.z = (int) (pos[atomId].z + origin.z)/h.z;
    
     /* 
-     * if boundaries are CBP, the particles at nCell.[x,y,z]-1 
+     * if boundaries are PBC, the particles at nCell.[x,y,z]-1 
      * are associated to cell.[x,y,z] = 0. 
      */
-    if (bCond.x == ADENTU_BOUNDARY_CBP && cell.x == (nCell.x-1))
+    if (bCond.x == ADENTU_BOUNDARY_PBC && cell.x == (nCell.x-1))
         cell.x = 0;
-    if (bCond.y == ADENTU_BOUNDARY_CBP && cell.y == (nCell.y-1))
+    if (bCond.y == ADENTU_BOUNDARY_PBC && cell.y == (nCell.y-1))
         cell.y = 0;
-    if (bCond.z == ADENTU_BOUNDARY_CBP && cell.z == (nCell.z-1))
+    if (bCond.z == ADENTU_BOUNDARY_PBC && cell.z == (nCell.z-1))
         cell.z = 0;
 
     int c = nCell.z * nCell.z + nCell.y * cell.y + cell.x;

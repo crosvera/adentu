@@ -24,25 +24,19 @@ void adentu_atom_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
 
     vec3f *pos = malloc (nAtoms * sizeof (vec3f));
     vec3f *vel = malloc (nAtoms * sizeof (vec3f));
-    int *lastTime = malloc (nAtoms * sizeof (int));
+    vec3f *velRel = NULL;
+    //int *lastTime = malloc (nAtoms * sizeof (int));
     int *nCol = malloc (nAtoms * sizeof (int));
     double *mass = malloc (nAtoms * sizeof (double));
     double *radius = malloc (nAtoms * sizeof (double));
 
-
-    atoms->type = conf->type;
-    atoms->n = nAtoms;
-    atoms->pos = pos;
-    atoms->vel = vel;
-    atoms->lastTime = lastTime;
-    atoms->nCol = nCol;
-    atoms->mass = mass;
-    atoms->radius = radius;
+    if (conf->type == ADENTU_ATOM_FLUID)
+        velRel = calloc (nAtoms, sizeof(vec3f));
 
 
     for (int i = 0; i < nAtoms; ++i)
     {
-        lastTime[i] = 0;
+        //lastTime[i] = 0;
         nCol[i] = 0;
         pos[i].x = pos[i].y = pos[i].z = 0;
         //vel[i].x = vel[i].y = vel[i].z = 0;
@@ -90,6 +84,16 @@ void adentu_atom_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
 
 
     }
+
+    atoms->type = conf->type;
+    atoms->n = nAtoms;
+    atoms->pos = pos;
+    atoms->vel = vel;
+    atoms->velRel = velRel;
+    //atoms->lastTime = lastTime;
+    atoms->nCol = nCol;
+    atoms->mass = mass;
+    atoms->radius = radius;
 }
 
 

@@ -38,9 +38,9 @@ void adentu_atom_cuda_set_init_vel (AdentuAtom *atoms, AdentuModel *model)
     vecSet (vcm, 0.0, 0.0, 0.0);
 
     if (atoms->type == ADENTU_ATOM_GRAIN)
-        velInit = (model->tempGrain != 0.0) ? sqrt (3 * model->tempGrain) : 1.;
+        velInit = (model->gTemp != 0.0) ? sqrt (3 * model->gTemp) : 1.;
     else if (atoms->type == ADENTU_ATOM_FLUID)
-        velInit = (model->tempFluid != 0.0) ? sqrt (3 * model->tempFluid) : 1.;
+        velInit = (model->fTemp != 0.0) ? sqrt (3 * model->fTemp) : 1.;
 
 
     CUDA_CALL (cudaMalloc ((void **)&d_vel, nAtoms * sizeof (vec3f)));
@@ -69,10 +69,10 @@ void adentu_atom_cuda_set_init_vel (AdentuAtom *atoms, AdentuModel *model)
     temp = vp2/3.;
     
     if (atoms->type == ADENTU_ATOM_GRAIN){
-        factor = (temp != 0.0) ? sqrt (model->tempGrain/temp) : 1.;
+        factor = (temp != 0.0) ? sqrt (model->gTemp/temp) : 1.;
         vcm = model->vcmGrain;
     } else if (atoms->type == ADENTU_ATOM_FLUID){
-        factor = (temp != 0.0) ? sqrt (model->tempFluid/temp) : 1.;
+        factor = (temp != 0.0) ? sqrt (model->fTemp/temp) : 1.;
         vcm = model->vcmFluid;
     }
 
@@ -170,7 +170,7 @@ void adentu_atom_cuda_set_init_pos (AdentuAtom *atoms, AdentuGrid *grid)
 
     
     rands = (double *)malloc (sizeof (double) * 6 * nAtoms);
-    CUDA_CALL (cudaMemcpy (rands, d_rands, 6 * nAtoms * sizeof (double), cudaMemcpyDeviceToHost);
+    CUDA_CALL (cudaMemcpy (rands, d_rands, 6 * nAtoms * sizeof (double), cudaMemcpyDeviceToHost));
     /*for (int i =0; i < nAtoms * 6; ++i)
         rands[i] = drand48();
     CUDA_CALL (cudaMemcpy (d_rands, rands, 6 * nAtoms * sizeof (double), cudaMemcpyHostToDevice));

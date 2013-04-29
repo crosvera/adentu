@@ -92,8 +92,8 @@ NVCCFLAGS += `pkg-config --cflags glib-2.0`
 LDFLAGS += `pkg-config --libs glib-2.0` -lm
 
 
-# Common includes and paths for CUDA
-INCLUDES      := -I$(CUDA_INC_PATH) -I.
+# Common includes and paths for CUDA and Adentu libs.
+INCLUDES      := -I$(CUDA_INC_PATH) -I. -I./event 
 
 
 
@@ -108,6 +108,9 @@ adentu-utils: vec3.h adentu-utils.h
 
 vec3.o: vec3.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
+
+vec3-cuda.o: vec3-cuda.cu
+	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
 adentu-atom.o: adentu-atom.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
@@ -130,12 +133,25 @@ adentu-neighbourhood.o: adentu-neighbourhood.c
 adentu-event.o: adentu-event.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-#adentu-cuda.o: adentu-cuda.cu
-#	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
+adentu-event-bc.o: event/adentu-event-bc.c
+	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
+
+adentu-event-bc-cuda.o: event/adentu-event-bc-cuda.cu
+	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
+
+adentu-event-mpc.o: event/adentu-event-mpc.c
+	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
+
+adentu-event-mpc-cuda.o: event/adentu-event-mpc-cuda.cu
+	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
+
+adentu-cuda-utils.o: adentu-cuda-utils.cu
+	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
+
 adentu.o: adentu.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu: vec3.o adentu.o adentu-grid.o adentu-atom.o  adentu-model.o adentu-atom-cuda.o adentu-grid-cuda.o adentu-neighbourhood.o adentu-event.o
+adentu: vec3.o vec3-cuda.o adentu.o adentu-grid.o adentu-atom.o  adentu-model.o adentu-atom-cuda.o adentu-grid-cuda.o adentu-neighbourhood.o adentu-event.o adentu-event-bc.o adentu-event-bc-cuda.o adentu-event-mpc.o adentu-event-mpc-cuda.o adentu-cuda-utils.o
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) -o $@ $+ $(LDFLAGS)  $(EXTRA_LDFLAGS)
 
 

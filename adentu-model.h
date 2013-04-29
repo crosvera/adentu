@@ -9,13 +9,14 @@
 
 #include "vec3.h"
 #include "adentu-atom.h"
+#include "adentu-grid.h"
 
 
 typedef enum {
-    ADENTU_BOUNDARY_CBP,
-    ADENTU_BOUNDARY_CBB,
-    ADENTU_BOUNDARY_CBR,
-    ADENTU_BOUNDARY_CBF
+    ADENTU_BOUNDARY_PBC,
+    ADENTU_BOUNDARY_BBC,
+    ADENTU_BOUNDARY_RBC,
+    ADENTU_BOUNDARY_FBC
 } AdentuBoundaryType;
 
 
@@ -30,20 +31,26 @@ typedef struct _AdentuModel {
     vec3f accel;
     
     double totalTime;
-    double deltaTime;
+    double dT;
     double elapsedTime;
 
-    double tempGrain;
-    double tempFluid;
+    double alpha;
+
+    double gTemp;
+    double fTemp;
+
+    vec3f gVel;
+    vec3f fVel;
 
     vec3f vcmGrain;
     vec3f vcmFluid;
 
-    unsigned int nGrainAtoms;
-    AdentuAtom *grainAtoms;
+    AdentuAtom *grain;
+    AdentuAtom *fluid;
 
-    unsigned int nFluidAtoms;
-    AdentuAtom *fluidAtoms;
+    AdentuGrid *gGrid;
+    AdentuGrid *fGrid;
+    AdentuGrid *mpcGrid;
 
     AdentuBoundaryCond bCond;
 } AdentuModel;
