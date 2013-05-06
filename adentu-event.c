@@ -8,6 +8,7 @@
 #include "adentu-event.h"
 #include "adentu-grid.h"
 #include "adentu-model.h"
+#include "adentu-runnable.h"
 
 
 const char *AdentuEventTypeStr[] = {
@@ -110,10 +111,12 @@ GSList *adentu_event_loop (GSList *eList,
                 //g_message ("Attending: type: %s, step: %f, owner: %d, partner: %d\n",
                 //  AdentuEventTypeStr[ev->type], ev->time, ev->owner, ev->partner);
 
+                adentu_runnable_exec_pre_func (model, ev);
                 //model->elapsedTime = ev->time;
                 (*handler[t]).event_attend (model, ev);
 
                 model->elapsedTime += (ev->time - model->elapsedTime);
+                adentu_runnable_exec_post_func (model, ev);
 
                 eList = adentu_event_schedule (eList,
                                     (*handler[t]).event_get_next (model));

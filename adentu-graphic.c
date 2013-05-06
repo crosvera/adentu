@@ -5,24 +5,33 @@
 #include <stdio.h>
 #include <math.h>
 #include <glib.h>
-#include <GL/glut.h>
+#include <GLUT/glut.h>
 
 #include "vec3.h"
 #include "adentu-model.h"
 #include "adentu-event.h"
 #include "adentu-graphic.h"
 
-void adentu_graphic_init (char **argc,
-                          int argv, 
+
+double phi = 0.0;
+double theta = 90.0;
+AdentuModel *adentu_model = NULL;
+GSList **adentu_eList = NULL;
+AdentuEventHandler **adentu_handler = NULL;
+
+
+
+void adentu_graphic_init (int argc,
+                          char **argv, 
                           AdentuModel *model, 
-                          GSList *eList,
+                          GSList **eList,
                           AdentuEventHandler **handler)
 {
     phi = 0.0;
     theta = 90.0;
 
     adentu_model = model;
-    *adentu_eList = eList;
+    adentu_eList = eList;
     adentu_handler = handler;
 
     glutInit (&argc, argv);
@@ -152,9 +161,9 @@ void adentu_graphic_display (void)
     {
         glPushMatrix ();
         glColor3ub (140, 140, 140);
-        glTranslatef (grain->pos[i].x - half.x,
-                      grain->pos[i].y - half.y,
-                      grain->pos[i].z - half.z);
+        glTranslatef (grain->pos[i].x,// - half.x,
+                      grain->pos[i].y,// - half.y,
+                      grain->pos[i].z);// - half.z);
         glutSolidSphere (grain->radius[i], 50, 50);
         glPopMatrix ();
     }
@@ -194,11 +203,11 @@ void adentu_graphic_event_loop (void)
                     (*adentu_handler[t]).event_attend (adentu_model, event);
                     adentu_model->elapsedTime += (event->time - 
                                                   adentu_model->elapsedTime);
-                    *eList = adentu_event_schedule (*eList,
+                    *adentu_eList = adentu_event_schedule (*adentu_eList,
                             (*adentu_handler[t]).event_get_next (adentu_model));
                 }
             else
-                *eList = adentu_event_schedule (*eList, 
+                *adentu_eList = adentu_event_schedule (*adentu_eList, 
                             (*adentu_handler[t]).event_get_next (adentu_model));
 
             free (event->eventData);

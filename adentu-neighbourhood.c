@@ -31,18 +31,8 @@ int adentu_neighbourhood_get_cell_from_atom (int atomId,
     cell.y = (int) (pos[atomId].y + origin.y)/h.y;
     cell.z = (int) (pos[atomId].z + origin.z)/h.z;
    
-    /* 
-     * if boundaries are PBC, the particles at nCell.[x,y,z]-1 
-     * are associated to cell.[x,y,z] = 0. 
-     */
-    if (bCond.x == ADENTU_BOUNDARY_PBC && cell.x == (nCell.x-1))
-        cell.x = 0;
-    if (bCond.y == ADENTU_BOUNDARY_PBC && cell.y == (nCell.y-1))
-        cell.y = 0;
-    if (bCond.z == ADENTU_BOUNDARY_PBC && cell.z == (nCell.z-1))
-        cell.z = 0;
 
-    int c = nCell.z * nCell.z + nCell.y * cell.y + cell.x;
+    int c = nCell.x * nCell.y * cell.z + nCell.x * cell.y + cell.x;
 
     return c;
 }
@@ -175,4 +165,43 @@ int *adentu_neighbourhood_get_atom_neighbourhood (int atomId,
     *nNeighbours = nAtoms -1;
     return neighbours;
 
+}
+
+
+int *adentu_neighbourhood_get_atoms (int *nAtoms,
+                                    int *cells, 
+                                    AdentuGrid *grid)
+{
+    *nAtoms = 0;
+    int a, c, j = 0;
+
+    //c = cells[0];
+    for (int i = 0; i < 27; ++i)
+        if ((c = cells[i]) != -1)
+            *nAtoms += grid->cells.nAtoms[c];
+
+    if (!(*nAtoms))
+        return 0;
+
+    int *neighbours = malloc (*nAtoms * sizeof (int));
+
+
+    for (int i = 0; i < 27; ++i)
+    {
+        if (cells[i] == -1)
+            continue ;
+
+        a = grid->head[c];
+        if (a != -1)
+            {
+                neighbours[j++] = a;
+                while (a != -1  &&  grid->linked[a] != -1)
+                {
+                    a = grid->linked[a];
+                    if (a != -1)
+                        neighbours[j++] = a;
+                }
+            }
+    }
+    return neighbours;
 }

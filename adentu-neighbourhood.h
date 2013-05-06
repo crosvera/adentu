@@ -31,4 +31,9 @@ int *adentu_neighbourhood_get_atom_neighbourhood (int atomId,
                                                  AdentuAtom *atoms,
                                                  AdentuGrid *grid,
                                                  AdentuModel *model);
+
+int *adentu_neighbourhood_get_atoms (int *nAtoms,
+                                    int *cells, 
+                                    AdentuGrid *grid);
+
 #endif /* __ADENTU_NEIGHBOURHOOD_H__ */

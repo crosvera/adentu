@@ -31,6 +31,9 @@ struct _vec3i {
 #define vecDot(v1, v2)             \
         ( (v1).x * (v2).x  +  (v1).y * (v2).y  +  (v1).z * (v2).z )
 
+#define vecMod(v)                   \
+        sqrt (vecDot(v, v))
+
 #define vecSet(v1, sx, sy, sz)     \
         (v1).x = sx,                \
         (v1).y = sy,                \

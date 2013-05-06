@@ -37,5 +37,5 @@ void print_vec3f (vec3f *v)
 
 void print_vec3i (vec3i *v)
 {
-    printf ("(%ld, %ld, %ld)\n", v->x, v->y, v->z);
+    printf ("(%d, %d, %d)\n", v->x, v->y, v->z);
 }

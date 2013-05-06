@@ -62,6 +62,8 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
     CUDA_CALL (cudaMalloc ((void **)&d_pos, nAtoms * sizeof (vec3f)));
     CUDA_CALL (cudaMemcpy (d_pos, atoms->pos, nAtoms * sizeof (vec3f), cudaMemcpyHostToDevice));
 
+    printf ("pre gridOrigin: %f, %f, %f\n", 
+            grid->origin.x, grid->origin.y, grid->origin.z);
 
     if (grid->type ==  ADENTU_GRID_MPC)
     {
@@ -69,6 +71,8 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
         vecScale (displace, grid->h, drand48 ());
         vecAdd (grid->origin, grid->origin, displace);
     }
+    printf ("pos gridOrigin: %f, %f, %f\n", 
+            grid->origin.x, grid->origin.y, grid->origin.z);
 
     dim3 gDim (1);
     dim3 bDim (nAtoms);
@@ -135,8 +139,10 @@ __global__ void adentu_grid_cuda_filling_kernel (int *head,
     if (bCond.z == ADENTU_BOUNDARY_PBC && cell.z == (nCell.z-1))
         cell.z = 0;
 
-    int c = nCell.z * nCell.z + nCell.y * cell.y + cell.x;
-    //printf ("Atom[%d] at Cell[%d]\n", idx, c);
+    //printf ("awef\n");
+    //int c = nCell.z * cell.z + nCell.y * cell.y + cell.x;
+    int c = nCell.x * nCell.y * cell.z + nCell.x * cell.y + cell.x;
+    printf ("Atom[%d] at Cell[%d], totalCell: %d\n", idx, c, nCell.x * nCell.y * nCell.z);
     //set_atom_to_cell (head, linked, idx, c);
 
     int i;

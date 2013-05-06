@@ -7,7 +7,6 @@
 
 #include <stdlib.h>
 #include <glib.h>
-#include <GL/glut.h>
 
 #include "vec3.h"
 #include "adentu-atom.h"
@@ -24,10 +23,11 @@ extern GSList **adentu_eList;
 extern AdentuEventHandler **adentu_handler;
 
 
-void adentu_graphic_init (char **argc,
-                          int argv, 
+void adentu_graphic_init (int argc,
+                          char **argv,
                           AdentuModel *model, 
-                          GSList *eList);
+                          GSList **eList,
+                          AdentuEventHandler **handler);
 
 
 void adentu_graphic_key (unsigned char key, 

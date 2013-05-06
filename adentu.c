@@ -11,18 +11,17 @@
 #include "adentu-grid.h"
 #include "adentu-event.h"
 #include "adentu-neighbourhood.h"
+#include "adentu-runnable.h"
 #include "vec3.h"
 
 
 /* Graphics */
-#ifdef ADENTU_GRAPHICS
-    #include "adentu-graphic.h"
-#endif /* ADENTU_GRAPHICS*/
-
+#include "adentu-graphic.h"
 
 /* events */
 #include "adentu-event-mpc.h"
 #include "adentu-event-bc.h"
+#include "adentu-event-gfc.h"
 
 
 const char *AdentuBoundaryTypeStr[] = {
@@ -39,10 +38,22 @@ AdentuEventHandler *handler[] = {
     [ADENTU_EVENT_MPC] = &AdentuMPCEventHandler,
     [ADENTU_EVENT_BC_GRAIN] = NULL, //&AdentuBCEventHandler,
     [ADENTU_EVENT_BC_FLUID] = &AdentuBCEventHandler,
-    [ADENTU_EVENT_GGC] = NULL,
+    [ADENTU_EVENT_GGC] = /* &AdentuGFCEventHandler,*/ NULL,
     [ADENTU_EVENT_GFC] = NULL, 
     [ADENTU_EVENT_END] = NULL
 };
+
+
+void print_event (AdentuModel *model, AdentuEvent *event)
+{
+    printf ("Event: %s\n", AdentuEventTypeStr[event->type]);
+    printf ("Time: %f\n", event->time);
+}
+
+void print_pre_event (AdentuModel *model, AdentuEvent *event)
+{
+    printf ("preEvent: %s\n", AdentuEventTypeStr[event->type]);
+}
 
 
 int main (int argc, char *argv[])
@@ -73,6 +84,8 @@ int main (int argc, char *argv[])
     m.gGrid = NULL;
     m.fGrid = NULL;
     m.mpcGrid = NULL;
+    m.pre_event_func = NULL;
+    m.post_event_func = NULL;
 
     
     
@@ -83,11 +96,11 @@ int main (int argc, char *argv[])
     vecSet (gc.cells, 5, 2, 3);
     gc.type = ADENTU_GRID_DEFAULT;
 
-  //  AdentuGrid g;
-    //adentu_grid_set_from_config (&g, &gc);
+    AdentuGrid g;
+    adentu_grid_set_from_config (&g, &gc);
 
-    /*set grit into the model*/
-   // m.gGrid = &g;
+    /*set grid into the model*/
+    m.gGrid = &g;
 
     /* creating fliud and MPC grid */
     AdentuGrid fg;
@@ -116,16 +129,16 @@ int main (int argc, char *argv[])
     ac.radii.from = ac.radii.to = 2.0;
     ac.radii.rangeType = ADENTU_PROP_CONSTANT;
 
-  /*  AdentuAtom a;
+    AdentuAtom a;
     adentu_atom_create_from_config (&a, &ac);
     adentu_atom_set_init_vel (&a, &m);
-    adentu_atom_set_init_pos (&a, &g); */
+    adentu_atom_set_init_pos (&a, &g); 
 
     /*set grains into the model*/
-    //m.grain = &a;
+    m.grain = &a;
 
     /* set atoms into grid */
-    //adentu_grid_set_atoms (&g, &a, &m);
+    adentu_grid_set_atoms (&g, &a, &m);
 
 
     /****************************************************/
@@ -150,19 +163,53 @@ int main (int argc, char *argv[])
 
     /* General debug Info */
     vec3f half, center;
-    vecScale (half, fg.length , 0.5);
-    center.x = fg.origin.x + half.x;
-    center.y = fg.origin.y + half.y;
-    center.z = fg.origin.z + half.z;
+    vecScale (half, m.gGrid->length , 0.5);
+    center.x = m.gGrid->origin.x + half.x;
+    center.y = m.gGrid->origin.y + half.y;
+    center.z = m.gGrid->origin.z + half.z;
                
-    printf ("Origin: ");
-    print_vec3f (&m.fGrid->origin);
-    printf ("Length: ");
-    print_vec3f (&fg.length);
-    printf ("Half:   ");
+    printf ("gGrid Origin: ");
+    print_vec3f (&m.gGrid->origin);
+    printf ("gGrid Length: ");
+    print_vec3f (&m.gGrid->length);
+    printf ("gGrid Half:   ");
     print_vec3f (&half);
-    printf ("Center: ");
+    printf ("gGrid Center: ");
     print_vec3f (&center);
+
+    vecScale (half, m.fGrid->length , 0.5);
+    center.x = m.fGrid->origin.x + half.x;
+    center.y = m.fGrid->origin.y + half.y;
+    center.z = m.fGrid->origin.z + half.z;
+               
+    printf ("fGrid Origin: ");
+    print_vec3f (&m.fGrid->origin);
+    printf ("fGrid Length: ");
+    print_vec3f (&m.fGrid->length);
+    printf ("fGrid Half:   ");
+    print_vec3f (&half);
+    printf ("fGrid Center: ");
+    print_vec3f (&center);
+
+    vecScale (half, m.mpcGrid->length , 0.5);
+    center.x = m.mpcGrid->origin.x + half.x;
+    center.y = m.mpcGrid->origin.y + half.y;
+    center.z = m.mpcGrid->origin.z + half.z;
+               
+    printf ("mpcGrid Origin: ");
+    print_vec3f (&m.mpcGrid->origin);
+    printf ("mpcGrid Length: ");
+    print_vec3f (&m.mpcGrid->length);
+    printf ("mpcGrid Half:   ");
+    print_vec3f (&half);
+    printf ("mpcGrid Center: ");
+    print_vec3f (&center);
+
+
+
+
+
+
     printf ("Acceleration: ");
     print_vec3f (&m.accel);
     printf ("gVel: ");
@@ -182,6 +229,9 @@ int main (int argc, char *argv[])
 */
 
 
+    adentu_runnable_add_pre_func (&m, print_pre_event);
+    adentu_runnable_add_post_func (&m, print_event);
+
     /* setup event engine */
     GSList *eList = NULL;
 
@@ -193,7 +243,8 @@ int main (int argc, char *argv[])
     eList = adentu_event_loop (eList, handler, &m);
 #elif
     /* graphics (: */
-
+    adentu_graphic_init (argc, argv, &m, &eList, &handler);
+    glut_main_loop ();
 #endif /* ADENTU_GRAPHICS*/
 
 

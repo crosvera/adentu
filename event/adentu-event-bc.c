@@ -119,25 +119,37 @@ void adentu_event_bc_attend (AdentuModel *model,
     double dT = event->time - model->elapsedTime;
 
     if (event->type == ADENTU_EVENT_BC_GRAIN)
-        adentu_event_mpc_cuda_integrate (model->grain, 
-                                         model->gGrid, 
-                                         model->accel, dT);
+        {
+            adentu_event_mpc_cuda_integrate (model->grain, 
+                                             model->gGrid, 
+                                             model->accel, dT);
+            adentu_grid_set_atoms (model->gGrid,
+                                   model->grain, 
+                                   model);
+        }
 
     else if (event->type == ADENTU_EVENT_BC_FLUID)
-        adentu_event_mpc_cuda_integrate (model->fluid, 
-                                         model->fGrid, 
-                                         model->accel, dT);
-
+        {
+            adentu_event_mpc_cuda_integrate (model->fluid, 
+                                             model->fGrid, 
+                                             model->accel, dT);
+            adentu_grid_set_atoms (model->fGrid,
+                                   model->fluid, 
+                                   model);
+        }
     //g_message ("Attending BC event, currentTime: %f atom: %d eventTime: %f", 
     //            model->elapsedTime, event->owner, event->time);
 
     //model->elapsedTime = event->time;
     adentu_event_bc_attend2 (model, event);
     AdentuAtom *atom = (event->type == ADENTU_EVENT_BC_GRAIN) ? model->grain : model->fluid;
-    printf ("%f\n", event->time);
+    /*printf ("%f\n", event->time);
     puts ("BC Event");
     for (int i = 0; i < atom->n; ++i)
-        printf (">%4d    %f %f %f    %f %f %f\n", i, atom->pos[i].x, atom->pos[i].y, atom->pos[i].z, atom->vel[i].x, atom->vel[i].y, atom->vel[i].z);
+        printf (">%4d    %f %f %f    %f %f %f\n", i, 
+                 atom->pos[i].x, atom->pos[i].y, atom->pos[i].z, 
+                 atom->vel[i].x, atom->vel[i].y, atom->vel[i].z);
+        */
 }
 
 

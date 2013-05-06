@@ -67,16 +67,20 @@ void adentu_event_mpc_attend (AdentuModel *model,
                                      model->fGrid, 
                                      model->accel, dT);
 
+    adentu_grid_set_atoms (model->mpcGrid,
+                           model->fluid, 
+                           model);
     
     adentu_event_mpc_cuda (model);
     AdentuAtom *atom = model->fluid;
-    printf ("%f\n", event->time);
-    puts ("MPC Event");
+    /*printf ("%f\n", event->time);
+    puts ("MPC Event");*/
     for (int i = 0; i < atom->n; ++i)
     {
         ++atom->nCol[i];
-        printf (">%4d    %f %f %f    %f %f %f\n", i, 
+        /*printf (">%4d    %f %f %f    %f %f %f\n", i, 
                 atom->pos[i].x, atom->pos[i].y, atom->pos[i].z, 
                 atom->vel[i].x, atom->vel[i].y, atom->vel[i].z);
+        */
     }
 }

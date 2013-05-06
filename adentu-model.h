@@ -53,6 +53,9 @@ typedef struct _AdentuModel {
     AdentuGrid *mpcGrid;
 
     AdentuBoundaryCond bCond;
+
+    GSList *pre_event_func;
+    GSList *post_event_func;
 } AdentuModel;
 
 
