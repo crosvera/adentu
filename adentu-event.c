@@ -26,14 +26,9 @@ const char *AdentuEventTypeStr[] = {
 
 AdentuEvent *adentu_event_get_next (GSList **eList)
 {
-    //g_message ("Getting next global event...");
     AdentuEvent *event = (AdentuEvent *)(*eList)->data;
     *eList = g_slist_remove (*eList, event);
-    /*if (event != NULL)
-        g_message ("New event: type: %s, step: %f, owner: %d, partner: %d",
-                   AdentuEventTypeStr[event->type], event->time, 
-                   event->owner, event->partner);
-    */
+    
     return event;
 }
 
@@ -42,6 +37,8 @@ AdentuEvent *adentu_event_get_next (GSList **eList)
 
 GSList *adentu_event_schedule (GSList *eList, AdentuEvent *event)
 {
+    //printf ("Scheduling: owner: %d, type: %s, time: %F\n", 
+    //        event->owner, AdentuEventTypeStr[event->type], event->time);
     return g_slist_insert_sorted (eList,
                            event,
                            adentu_event_compare);
@@ -76,13 +73,10 @@ GSList * adentu_event_init (GSList *eList,
     ev->time = model->totalTime;
     ev->owner = ev->partner = -1;
     eList = adentu_event_schedule (eList, ev);
-    //g_message ("Created and scheduled END_EVENT for time=totalTime=%f.", 
-    //            ev->time);
 
 
     for (int i = ADENTU_EVENT_START; i != ADENTU_EVENT_END; ++i)
         {
-            //g_message ("handler[%d] = %x\n", i, handler[i]);
             if (handler[i] != NULL)
                 eList = (*handler[i]).event_init (model, eList);
         }
@@ -103,19 +97,15 @@ GSList *adentu_event_loop (GSList *eList,
 
     while (ev->type != ADENTU_EVENT_END)
     {
-        //g_message ("ElapsedTime=%f", model->elapsedTime);
         t = ev->type;
 
         if ((*handler[t]).event_is_valid (model, ev))
             {
-                //g_message ("Attending: type: %s, step: %f, owner: %d, partner: %d\n",
-                //  AdentuEventTypeStr[ev->type], ev->time, ev->owner, ev->partner);
-
                 adentu_runnable_exec_pre_func (model, ev);
-                //model->elapsedTime = ev->time;
                 (*handler[t]).event_attend (model, ev);
 
-                model->elapsedTime += (ev->time - model->elapsedTime);
+                model->elapsedTime = ev->time;
+                
                 adentu_runnable_exec_post_func (model, ev);
 
                 eList = adentu_event_schedule (eList,

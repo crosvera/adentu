@@ -11,6 +11,20 @@
 #include "adentu-atom.h"
 //#include "adentu-model.h"
 
+
+
+typedef enum {
+    ADENTU_CELL_WALL_NO     = 0,
+    ADENTU_CELL_WALL_LEFT   = 1,
+    ADENTU_CELL_WALL_RIGHT  = 2,
+    ADENTU_CELL_WALL_TOP    = 4,
+    ADENTU_CELL_WALL_BOTTOM = 8,
+    ADENTU_CELL_WALL_FRONT  = 16,
+    ADENTU_CELL_WALL_BACK   = 32
+} AdentuCellWallType;
+
+
+/*
 #define NO_WALL     0
 #define LEFT_WALL   1
 #define RIGHT_WALL  2
@@ -18,7 +32,7 @@
 #define BOTTOM_WALL 8
 #define FRONT_WALL  16
 #define BACK_WALL   32
-
+*/
 
 
 typedef enum {
@@ -26,14 +40,9 @@ typedef enum {
     ADENTU_GRID_MPC
 } AdentuGridType;
 
-/* typedef enum {
-    ADENTU_CELL_WALL,
-    ADENTU_CELL_INNER
-} AdentuCellType;
-*/
 
 typedef struct _AdentuCell {
-    unsigned int *nAtoms;
+    int *nAtoms;
     vec3f *vcm;
     int *wall;
     vec3f *nhat;
@@ -47,7 +56,7 @@ typedef struct _AdentuGrid {
     vec3f length;
     vec3f h;    /** Cell Length */
     vec3i nCell;
-    unsigned int tCell;
+    int tCell;
     AdentuCell cells;
     int *head;
     int *linked;

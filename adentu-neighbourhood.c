@@ -53,8 +53,8 @@ void adentu_neighbourhood_get_cell_neighbourhood (int cellId,
     while (j--)
     {
 
-        if (wall & ~BOTTOM_WALL) {
-            if (wall & ~LEFT_WALL) {
+        if (wall & ~ADENTU_CELL_WALL_BOTTOM) {
+            if (wall & ~ADENTU_CELL_WALL_LEFT) {
                 c = cellId - x - 1 + xy;
                 if (c >= 0 && c < tCell)
                     cells[i++] = c;
@@ -64,14 +64,14 @@ void adentu_neighbourhood_get_cell_neighbourhood (int cellId,
             if (c >= 0 && c < tCell)
                 cells[i++] = c;
  
-            if (wall & ~RIGHT_WALL) {
+            if (wall & ~ADENTU_CELL_WALL_RIGHT) {
                 c = cellId - x + 1 + xy;
                 if (c >= 0 && c < tCell)
                     cells[i++] = c;
             }
         }
         
-        if (wall & ~LEFT_WALL) {
+        if (wall & ~ADENTU_CELL_WALL_LEFT) {
             c = cellId - 1 + xy;
             if (c >= 0 && c < tCell)
                 cells[i++] = c;
@@ -81,14 +81,14 @@ void adentu_neighbourhood_get_cell_neighbourhood (int cellId,
             if (c >= 0 && c < tCell)
                 cells[i++] = c;
          
-         if (wall & ~RIGHT_WALL) {
+         if (wall & ~ADENTU_CELL_WALL_RIGHT) {
             c = cellId + 1 + xy;
             if (c >= 0 && c < tCell)
                 cells[i++] = c;
          }
     
-        if (wall & ~TOP_WALL) {
-            if (wall & ~LEFT_WALL) {
+        if (wall & ~ADENTU_CELL_WALL_TOP) {
+            if (wall & ~ADENTU_CELL_WALL_LEFT) {
                 c = cellId + x - 1 + xy;
                 if (c >= 0 && c < tCell)
                     cells[i++] = c;
@@ -98,16 +98,16 @@ void adentu_neighbourhood_get_cell_neighbourhood (int cellId,
             if (c >= 0 && c < tCell)
                 cells[i++] = c;
     
-            if (wall & ~RIGHT_WALL) {
+            if (wall & ~ADENTU_CELL_WALL_RIGHT) {
                 c = cellId + x + 1 + xy;
                 if (c >= 0 && c < tCell)
                     cells[i++] = c;
             }
         }
 
-        if (j == 2 && (wall & ~BACK_WALL))
+        if (j == 2 && (wall & ~ADENTU_CELL_WALL_BACK))
             xy = x * y;
-        else if (j == 1 && (wall & ~FRONT_WALL))
+        else if (j == 1 && (wall & ~ADENTU_CELL_WALL_FRONT))
             xy = x * y * -1;
     }
 

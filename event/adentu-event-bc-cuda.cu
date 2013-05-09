@@ -186,12 +186,12 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
         if (Vel.x < 0.0  &&  disc > 0.0)
         {
             time.x = (-Vel.x - sqrt (disc)) / accel.x;
-            wall.x = LEFT_WALL;
+            wall.x = ADENTU_CELL_WALL_LEFT;
         } else
         {
             disc = (Vel.x * Vel.x) - 2 * accel.x * (Pos.x - limit.x);
             time.x = (-Vel.x + sqrt (disc)) / accel.x;
-            wall.x = RIGHT_WALL;
+            wall.x = ADENTU_CELL_WALL_RIGHT;
         }
     } else if (accel.x < 0.0)
     {
@@ -199,23 +199,23 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
         if (Vel.x > 0.0  &&  disc > 0.0)
         {
             time.x = (-Vel.x + sqrt (disc)) / accel.x;
-            wall.x = RIGHT_WALL;
+            wall.x = ADENTU_CELL_WALL_RIGHT;
         } else
         {
             disc = (Vel.x * Vel.x) - 2 * accel.x * (Pos.x - origin.x);
             time.x = (-Vel.x - sqrt (disc)) / accel.x;
-            wall.x = LEFT_WALL;
+            wall.x = ADENTU_CELL_WALL_LEFT;
         }
     } else if (accel.x == 0.0)
     {
         if (Vel.x > 0.0)
         {
             time.x = (limit.x - Pos.x) / Vel.x;
-            wall.x = RIGHT_WALL;
+            wall.x = ADENTU_CELL_WALL_RIGHT;
         } else if (Vel.x < 0.0)
         {
             time.x = (origin.x - Pos.x) / Vel.x;
-            wall.x = LEFT_WALL;
+            wall.x = ADENTU_CELL_WALL_LEFT;
         }
     }
 
@@ -226,12 +226,12 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
         if (Vel.y < 0.0  &&  disc > 0.0)
         {
             time.y = (-Vel.y - sqrt (disc)) / accel.y;
-            wall.y = BOTTOM_WALL;
+            wall.y = ADENTU_CELL_WALL_BOTTOM;
         } else
         {
             disc = (Vel.y * Vel.y) - 2 * accel.y * (Pos.y - limit.y);
             time.y = (-Vel.y + sqrt (disc)) / accel.y;
-            wall.y = TOP_WALL;
+            wall.y = ADENTU_CELL_WALL_TOP;
         }
     } else if (accel.y < 0.0)
     {
@@ -239,23 +239,23 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
         if (Vel.y > 0.0  &&  disc > 0.0)
         {
             time.y = (-Vel.y + sqrt (disc)) / accel.y;
-            wall.y = TOP_WALL;
+            wall.y = ADENTU_CELL_WALL_TOP;
         } else
         {
             disc = (Vel.y * Vel.y) - 2 * accel.y * (Pos.y - origin.y);
             time.y = (-Vel.y - sqrt (disc)) / accel.y;
-            wall.y = BOTTOM_WALL;
+            wall.y = ADENTU_CELL_WALL_BOTTOM;
         }
     } else if (accel.y == 0.0)
     {
         if (Vel.y > 0.0)
         {
             time.y = (limit.y - Pos.y) / Vel.y;
-            wall.y = TOP_WALL;
+            wall.y = ADENTU_CELL_WALL_TOP;
         } else if (Vel.y < 0.0)
         {
             time.y = (origin.y - Pos.y) / Vel.y;
-            wall.y = BOTTOM_WALL;
+            wall.y = ADENTU_CELL_WALL_BOTTOM;
         }
     }
 
@@ -267,13 +267,13 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
         if (Vel.z < 0.0  &&  disc > 0.0)
         {
             time.z = (-Vel.z - sqrt (disc)) / accel.z;
-            wall.z = BACK_WALL;
+            wall.z = ADENTU_CELL_WALL_BACK;
         } else
         {
             disc = (Vel.z * Vel.z) - 2 * accel.z * (Pos.z - limit.z);
         //    printf (">idx: %d, disc: %f sqrt(disc): %f\n", idx, disc, sqrt(disc));
             time.z = (-Vel.z + sqrt (disc)) / accel.z;
-            wall.z = FRONT_WALL;
+            wall.z = ADENTU_CELL_WALL_FRONT;
         }
     } else if (accel.z < 0.0)
     {
@@ -282,24 +282,24 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
         if (Vel.z > 0.0  &&  disc > 0.0)
         {
             time.z = (-Vel.z + sqrt (disc)) / accel.z;
-            wall.z = FRONT_WALL;
+            wall.z = ADENTU_CELL_WALL_FRONT;
         } else
         {
             disc = (Vel.z * Vel.z) - 2 * accel.z * (Pos.z - origin.z);
          //   printf (">idx: %d, disc: %f sqrt(disc): %f\n", idx, disc, sqrt(disc));
             time.z = (-Vel.z - sqrt (disc)) / accel.z;
-            wall.z = BACK_WALL;
+            wall.z = ADENTU_CELL_WALL_BACK;
         }
     } else if (accel.z == 0.0)
     {
         if (Vel.z > 0.0)
         {
             time.z = (limit.z - Pos.z) / Vel.z;
-            wall.z = FRONT_WALL;
+            wall.z = ADENTU_CELL_WALL_FRONT;
         } else if (Vel.z < 0.0)
         {
             time.z = (origin.z - Pos.z) / Vel.z;
-            wall.z = BACK_WALL;
+            wall.z = ADENTU_CELL_WALL_BACK;
         }
     }
 
@@ -426,6 +426,7 @@ AdentuEvent *adentu_event_bc_cuda_get_next2 (AdentuModel *model,
     CUDA_CALL (cudaMemcpy (walls, d_walls, nAtoms * sizeof (int), 
                            cudaMemcpyDeviceToHost));
 
+
     double t = times[0];
     int x= 0;
     for (int i=0; i < nAtoms; ++i)
@@ -493,12 +494,12 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel2 (double *times,
         if (Vel.x < 0.0  &&  disc > 0.0)
         {
             time.x = (-Vel.x - sqrt (disc)) / accel.x;
-            wall.x = LEFT_WALL;
+            wall.x = ADENTU_CELL_WALL_LEFT;
         } else
         {
             disc = (Vel.x * Vel.x) - 2 * accel.x * (Pos.x - limit.x);
             time.x = (-Vel.x + sqrt (disc)) / accel.x;
-            wall.x = RIGHT_WALL;
+            wall.x = ADENTU_CELL_WALL_RIGHT;
         }
     } else if (accel.x < 0.0)
     {
@@ -506,23 +507,23 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel2 (double *times,
         if (Vel.x > 0.0  &&  disc > 0.0)
         {
             time.x = (-Vel.x + sqrt (disc)) / accel.x;
-            wall.x = RIGHT_WALL;
+            wall.x = ADENTU_CELL_WALL_RIGHT;
         } else
         {
             disc = (Vel.x * Vel.x) - 2 * accel.x * (Pos.x - origin.x);
             time.x = (-Vel.x - sqrt (disc)) / accel.x;
-            wall.x = LEFT_WALL;
+            wall.x = ADENTU_CELL_WALL_LEFT;
         }
     } else if (accel.x == 0.0)
     {
         if (Vel.x > 0.0)
         {
             time.x = (limit.x - Pos.x) / Vel.x;
-            wall.x = RIGHT_WALL;
+            wall.x = ADENTU_CELL_WALL_RIGHT;
         } else if (Vel.x < 0.0)
         {
             time.x = (origin.x - Pos.x) / Vel.x;
-            wall.x = LEFT_WALL;
+            wall.x = ADENTU_CELL_WALL_LEFT;
         }
     }
 
@@ -533,12 +534,12 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel2 (double *times,
         if (Vel.y < 0.0  &&  disc > 0.0)
         {
             time.y = (-Vel.y - sqrt (disc)) / accel.y;
-            wall.y = BOTTOM_WALL;
+            wall.y = ADENTU_CELL_WALL_BOTTOM;
         } else
         {
             disc = (Vel.y * Vel.y) - 2 * accel.y * (Pos.y - limit.y);
             time.y = (-Vel.y + sqrt (disc)) / accel.y;
-            wall.y = TOP_WALL;
+            wall.y = ADENTU_CELL_WALL_TOP;
         }
     } else if (accel.y < 0.0)
     {
@@ -546,23 +547,23 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel2 (double *times,
         if (Vel.y > 0.0  &&  disc > 0.0)
         {
             time.y = (-Vel.y + sqrt (disc)) / accel.y;
-            wall.y = TOP_WALL;
+            wall.y = ADENTU_CELL_WALL_TOP;
         } else
         {
             disc = (Vel.y * Vel.y) - 2 * accel.y * (Pos.y - origin.y);
             time.y = (-Vel.y - sqrt (disc)) / accel.y;
-            wall.y = BOTTOM_WALL;
+            wall.y = ADENTU_CELL_WALL_BOTTOM;
         }
     } else if (accel.y == 0.0)
     {
         if (Vel.y > 0.0)
         {
             time.y = (limit.y - Pos.y) / Vel.y;
-            wall.y = TOP_WALL;
+            wall.y = ADENTU_CELL_WALL_TOP;
         } else if (Vel.y < 0.0)
         {
             time.y = (origin.y - Pos.y) / Vel.y;
-            wall.y = BOTTOM_WALL;
+            wall.y = ADENTU_CELL_WALL_BOTTOM;
         }
     }
 
@@ -570,43 +571,39 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel2 (double *times,
     if (accel.z > 0.0)
     {
         disc = (Vel.z * Vel.z) - 2 * accel.z * (Pos.z - origin.z);
-    //    printf ("idx: %d, disc: %f sqrt(disc): %f\n", idx, disc, sqrt(disc));
         if (Vel.z < 0.0  &&  disc > 0.0)
         {
             time.z = (-Vel.z - sqrt (disc)) / accel.z;
-            wall.z = BACK_WALL;
+            wall.z = ADENTU_CELL_WALL_FRONT;
         } else
         {
             disc = (Vel.z * Vel.z) - 2 * accel.z * (Pos.z - limit.z);
-        //    printf (">idx: %d, disc: %f sqrt(disc): %f\n", idx, disc, sqrt(disc));
             time.z = (-Vel.z + sqrt (disc)) / accel.z;
-            wall.z = FRONT_WALL;
+            wall.z = ADENTU_CELL_WALL_BACK;
         }
     } else if (accel.z < 0.0)
     {
         disc = (Vel.z * Vel.z) - 2 * accel.z * (Pos.z - limit.z);
-    //  printf ("idx: %d, disc: %f sqrt(disc): %f\n", idx, disc, sqrt(disc));
         if (Vel.z > 0.0  &&  disc > 0.0)
         {
             time.z = (-Vel.z + sqrt (disc)) / accel.z;
-            wall.z = FRONT_WALL;
+            wall.z = ADENTU_CELL_WALL_BACK;
         } else
         {
             disc = (Vel.z * Vel.z) - 2 * accel.z * (Pos.z - origin.z);
-         //   printf (">idx: %d, disc: %f sqrt(disc): %f\n", idx, disc, sqrt(disc));
             time.z = (-Vel.z - sqrt (disc)) / accel.z;
-            wall.z = BACK_WALL;
+            wall.z = ADENTU_CELL_WALL_FRONT;
         }
     } else if (accel.z == 0.0)
     {
         if (Vel.z > 0.0)
         {
             time.z = (limit.z - Pos.z) / Vel.z;
-            wall.z = FRONT_WALL;
+            wall.z = ADENTU_CELL_WALL_BACK;
         } else if (Vel.z < 0.0)
         {
             time.z = (origin.z - Pos.z) / Vel.z;
-            wall.z = BACK_WALL;
+            wall.z = ADENTU_CELL_WALL_FRONT;
         }
     }
 

@@ -21,12 +21,12 @@ struct _vec3i {
 #define vecAdd(v1, v2, v3)         \
         (v1).x = (v2).x + (v3).x,   \
         (v1).y = (v2).y + (v3).y,   \
-        (v1).x = (v2).z + (v3).z
+        (v1).z = (v2).z + (v3).z
 
 #define vecSub(v1, v2, v3)         \
         (v1).x = (v2).x - (v3).x,   \
         (v1).y = (v2).y - (v3).y,   \
-        (v1).x = (v2).z - (v3).z
+        (v1).z = (v2).z - (v3).z
 
 #define vecDot(v1, v2)             \
         ( (v1).x * (v2).x  +  (v1).y * (v2).y  +  (v1).z * (v2).z )
@@ -57,8 +57,8 @@ void print_vec3f (vec3f *v);
 void print_vec3i (vec3i *v);
 
 
-#define print3i(v)  printf ("(%d, %d,%d\n)", (v)->x, (v)->y, (v)->z);
-#define print3f(v)  printf ("(%f, %f,%f\n)", (v)->x, (v)->y, (v)->z);
+#define print3i(v)  printf ("(%d, %d, %d)", (v).x, (v).y, (v).z);
+#define print3f(v)  printf ("(%f, %f, %f)", (v).x, (v).y, (v).z);
 
 
 

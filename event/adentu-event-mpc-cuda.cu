@@ -55,7 +55,7 @@ void adentu_event_mpc_cuda_integrate (AdentuAtom *fluid,
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
 
 
-    g_message ("Integrating %d atoms.", nAtoms);
+    //g_message ("Integrating %d atoms.", nAtoms);
 
     adentu_event_mpc_cuda_integrate_kernel<<<gDim, bDim>>> (d_pos, 
                                                             d_vel, 

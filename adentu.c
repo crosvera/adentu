@@ -35,24 +35,69 @@ const char *AdentuBoundaryTypeStr[] = {
 
 AdentuEventHandler *handler[] = {
     [ADENTU_EVENT_START] = NULL,
-    [ADENTU_EVENT_MPC] = &AdentuMPCEventHandler,
-    [ADENTU_EVENT_BC_GRAIN] = NULL, //&AdentuBCEventHandler,
-    [ADENTU_EVENT_BC_FLUID] = &AdentuBCEventHandler,
+    [ADENTU_EVENT_MPC] = NULL, //&AdentuMPCEventHandler,
+    [ADENTU_EVENT_BC_GRAIN] = &AdentuBCGrainEventHandler,
+    [ADENTU_EVENT_BC_FLUID] = &AdentuBCFluidEventHandler,
     [ADENTU_EVENT_GGC] = /* &AdentuGFCEventHandler,*/ NULL,
     [ADENTU_EVENT_GFC] = NULL, 
     [ADENTU_EVENT_END] = NULL
 };
 
-
 void print_event (AdentuModel *model, AdentuEvent *event)
 {
-    printf ("Event: %s\n", AdentuEventTypeStr[event->type]);
+    printf ("Event type: %s, time: %f\n", 
+            AdentuEventTypeStr[event->type],
+            event->time);
+}
+
+void print_post_event (AdentuModel *model, AdentuEvent *event)
+{
+    if (event->type != ADENTU_EVENT_BC_GRAIN &&
+        event->type != ADENTU_EVENT_BC_FLUID)
+            return;
+
+    int own = event->owner;
+    AdentuAtom *atom;
+    printf ("pos> Atom: %d, ", own);
     printf ("Time: %f\n", event->time);
+    if (event->type == ADENTU_EVENT_BC_GRAIN)
+        atom = model->grain;
+    else
+        atom = model->fluid;
+
+    printf ("Vel: ");
+    print3f (atom->vel[own]);
+    printf ("Pos: ");
+    print3f (atom->pos[own]);
+
+    puts ("");
+
 }
 
 void print_pre_event (AdentuModel *model, AdentuEvent *event)
 {
-    printf ("preEvent: %s\n", AdentuEventTypeStr[event->type]);
+    if (event->type != ADENTU_EVENT_BC_GRAIN && 
+        event->type != ADENTU_EVENT_BC_FLUID)
+            return;
+
+
+    //printf ("preEvent: %s\n", AdentuEventTypeStr[event->type]);
+    int own = event->owner;
+    AdentuAtom *atom;
+    printf ("pre> Atom: %d, ", own);
+    printf ("Time: %f\n", model->elapsedTime);
+    if (event->type == ADENTU_EVENT_BC_GRAIN)
+        atom = model->grain;
+    else
+        atom = model->fluid;
+
+    printf ("Vel: ");
+    print3f (atom->vel[own]);
+    printf ("Pos: ");
+    print3f (atom->pos[own]);
+
+    puts ("");
+    
 }
 
 
@@ -105,12 +150,12 @@ int main (int argc, char *argv[])
     /* creating fliud and MPC grid */
     AdentuGrid fg;
     adentu_grid_set_from_config (&fg, &gc);
+    m.fGrid = &fg;
 
     gc.type = ADENTU_GRID_MPC;
     AdentuGrid mpcg;
     adentu_grid_set_from_config (&mpcg, &gc);
 
-    m.fGrid = &fg;
     m.mpcGrid = &mpcg;
 
 
@@ -143,7 +188,7 @@ int main (int argc, char *argv[])
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms = 32;
+    ac.nAtoms = 8;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
@@ -156,7 +201,7 @@ int main (int argc, char *argv[])
     adentu_atom_set_init_pos (&f, &fg);
     m.fluid = &f;
     adentu_grid_set_atoms (&fg, &f, &m);
-    adentu_grid_set_atoms (&mpcg, &f, &m);
+    //adentu_grid_set_atoms (&mpcg, &f, &m);
 
 
 
@@ -176,7 +221,7 @@ int main (int argc, char *argv[])
     print_vec3f (&half);
     printf ("gGrid Center: ");
     print_vec3f (&center);
-
+/*
     vecScale (half, m.fGrid->length , 0.5);
     center.x = m.fGrid->origin.x + half.x;
     center.y = m.fGrid->origin.y + half.y;
@@ -205,7 +250,7 @@ int main (int argc, char *argv[])
     printf ("mpcGrid Center: ");
     print_vec3f (&center);
 
-
+*/
 
 
 
@@ -231,6 +276,7 @@ int main (int argc, char *argv[])
 
     adentu_runnable_add_pre_func (&m, print_pre_event);
     adentu_runnable_add_post_func (&m, print_event);
+    adentu_runnable_add_post_func (&m, print_post_event);
 
     /* setup event engine */
     GSList *eList = NULL;

@@ -18,26 +18,44 @@
 #include "adentu-event-bc-cuda.h"
 #include "adentu-event-mpc-cuda.h"
 
-AdentuEventHandler AdentuBCEventHandler = {adentu_event_bc_init,
-                                           adentu_event_bc_is_valid,
-                                           adentu_event_bc_attend,
-                                           adentu_event_bc_get_next};
+AdentuEventHandler AdentuBCGrainEventHandler = {adentu_event_bc_grain_init,
+                                                adentu_event_bc_is_valid,
+                                                adentu_event_bc_attend,
+                                                adentu_event_bc_grain_get_next};
+
+AdentuEventHandler AdentuBCFluidEventHandler = {adentu_event_bc_fluid_init,
+                                                adentu_event_bc_is_valid,
+                                                adentu_event_bc_attend,
+                                                adentu_event_bc_fluid_get_next};
 
 
-GSList *adentu_event_bc_init (AdentuModel *model,
-                              GSList *eList)
+
+
+
+
+GSList *adentu_event_bc_grain_init (AdentuModel *model,
+                                    GSList *eList)
 {
+    eList = adentu_event_schedule (eList, 
+                                   adentu_event_bc_grain_get_next (model));
     
-    //g_message ("Installing BC event handler\n");
-    eList = adentu_event_schedule (eList, adentu_event_bc_get_next (model));
- 
+    return eList;
+}
 
-    /* Dummy */
+GSList *adentu_event_bc_fluid_init (AdentuModel *model,
+                                    GSList *eList)
+{
+    eList = adentu_event_schedule (eList, 
+                                   adentu_event_bc_fluid_get_next (model));
+    
     return eList;
 }
 
 
 
+
+
+/*
 AdentuEvent *adentu_event_bc_get_next (AdentuModel *model)
 {
     AdentuEvent *e1 = NULL, *e2 = NULL;
@@ -68,6 +86,25 @@ AdentuEvent *adentu_event_bc_get_next (AdentuModel *model)
         return e2;
     else
         return e1;
+}*/
+
+AdentuEvent *adentu_event_bc_fluid_get_next (AdentuModel *model)
+{
+    AdentuEvent *ev = NULL;
+    ev = adentu_event_bc_cuda_get_next2 (model, ADENTU_ATOM_FLUID);
+    ev->time += model->elapsedTime;
+
+    return ev;
+}
+
+
+AdentuEvent *adentu_event_bc_grain_get_next (AdentuModel *model)
+{
+    AdentuEvent *ev = NULL;
+    ev = adentu_event_bc_cuda_get_next2 (model, ADENTU_ATOM_GRAIN);
+    ev->time += model->elapsedTime;
+
+    return ev;
 }
 
 
@@ -123,9 +160,9 @@ void adentu_event_bc_attend (AdentuModel *model,
             adentu_event_mpc_cuda_integrate (model->grain, 
                                              model->gGrid, 
                                              model->accel, dT);
-            adentu_grid_set_atoms (model->gGrid,
+            /*adentu_grid_set_atoms (model->gGrid,
                                    model->grain, 
-                                   model);
+                                   model);*/
         }
 
     else if (event->type == ADENTU_EVENT_BC_FLUID)
@@ -133,9 +170,9 @@ void adentu_event_bc_attend (AdentuModel *model,
             adentu_event_mpc_cuda_integrate (model->fluid, 
                                              model->fGrid, 
                                              model->accel, dT);
-            adentu_grid_set_atoms (model->fGrid,
+            /*adentu_grid_set_atoms (model->fGrid,
                                    model->fluid, 
-                                   model);
+                                   model);*/
         }
     //g_message ("Attending BC event, currentTime: %f atom: %d eventTime: %f", 
     //            model->elapsedTime, event->owner, event->time);
@@ -203,7 +240,7 @@ void adentu_event_bc_attend2 (AdentuModel *model,
 */
     switch (wall)
     {
-        case RIGHT_WALL:
+        case ADENTU_CELL_WALL_RIGHT:
   //          g_message ("right wall");
             switch (bc.x)
             {
@@ -234,7 +271,7 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             }
             break ;
 
-        case LEFT_WALL:
+        case ADENTU_CELL_WALL_LEFT:
     //        g_message ("left wall");
             switch (bc.x)
             {
@@ -265,7 +302,7 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             }
             break ;
 
-        case TOP_WALL:
+        case ADENTU_CELL_WALL_TOP:
       //      g_message ("top wall");
             switch (bc.y)
             {
@@ -296,7 +333,7 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             }
             break ;
 
-        case BOTTOM_WALL:
+        case ADENTU_CELL_WALL_BOTTOM:
         //    g_message ("bottom wall");
             switch (bc.y)
             {
@@ -327,7 +364,7 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             }
             break ;
 
-        case BACK_WALL:
+        case ADENTU_CELL_WALL_BACK:
           //  g_message ("back wall");
             switch (bc.z)
             {
@@ -358,7 +395,7 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             }
             break ;
 
-        case FRONT_WALL:
+        case ADENTU_CELL_WALL_FRONT:
             //g_message ("front wall");
             switch (bc.z)
             {

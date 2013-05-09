@@ -42,7 +42,7 @@ void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf)
 
     grid->head = malloc (tCell * sizeof (int));
     //grid->cells = (AdentuCell *) calloc (tCell, sizeof (AdentuCell));
-    grid->cells.nAtoms = calloc (tCell, sizeof (unsigned int));
+    grid->cells.nAtoms = calloc (tCell, sizeof (int));
     grid->cells.vcm = calloc (tCell, sizeof (vec3f));
     grid->cells.wall = calloc (tCell, sizeof (int));
     grid->cells.nhat = calloc (tCell, sizeof (vec3f));
@@ -55,20 +55,20 @@ void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf)
             for (int x = 0; x < xc; ++x){
                 unsigned int idx = x + y*xc + z*xc*yc;
 
-                cell->wall[idx] = NO_WALL;
+                cell->wall[idx] = ADENTU_CELL_WALL_NO;
 
                 if (x == 0)
-                    cell->wall[idx] |= LEFT_WALL;
+                    cell->wall[idx] |= ADENTU_CELL_WALL_LEFT;
                 else if (x == xc-1)
-                    cell->wall[idx] |= RIGHT_WALL;
+                    cell->wall[idx] |= ADENTU_CELL_WALL_RIGHT;
                 if (y == 0)
-                    cell->wall[idx] |= BOTTOM_WALL;
+                    cell->wall[idx] |= ADENTU_CELL_WALL_BOTTOM;
                 else if (y == yc-1)
-                    cell->wall[idx] |= TOP_WALL;
+                    cell->wall[idx] |= ADENTU_CELL_WALL_TOP;
                 if (z == 0)
-                    cell->wall[idx] |= FRONT_WALL;
+                    cell->wall[idx] |= ADENTU_CELL_WALL_FRONT;
                 else if (z == zc-1)
-                    cell->wall[idx] |= BACK_WALL;
+                    cell->wall[idx] |= ADENTU_CELL_WALL_BACK;
 
 
                 cell->nAtoms[idx] = 0;
