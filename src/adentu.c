@@ -1,5 +1,20 @@
 /*
-    Carlos Ríos Vera <crosvera@gmail.com>
+    Adentu: An hybrid molecular dynamic software.
+    https://github.com/crosvera/adentu
+    
+    Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+
+    This program is free software: you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    version 3 as published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <stdio.h>
@@ -35,11 +50,11 @@ const char *AdentuBoundaryTypeStr[] = {
 
 AdentuEventHandler *handler[] = {
     [ADENTU_EVENT_START] = NULL,
-    [ADENTU_EVENT_MPC] = NULL, //&AdentuMPCEventHandler,
+    [ADENTU_EVENT_MPC] = &AdentuMPCEventHandler,
     [ADENTU_EVENT_BC_GRAIN] = &AdentuBCGrainEventHandler,
     [ADENTU_EVENT_BC_FLUID] = &AdentuBCFluidEventHandler,
-    [ADENTU_EVENT_GGC] = /* &AdentuGFCEventHandler,*/ NULL,
-    [ADENTU_EVENT_GFC] = NULL, 
+    [ADENTU_EVENT_GGC] = NULL,
+    [ADENTU_EVENT_GFC] = /*&AdentuGFCEventHandler,*/ NULL, 
     [ADENTU_EVENT_END] = NULL
 };
 
@@ -201,7 +216,7 @@ int main (int argc, char *argv[])
     adentu_atom_set_init_pos (&f, &fg);
     m.fluid = &f;
     adentu_grid_set_atoms (&fg, &f, &m);
-    //adentu_grid_set_atoms (&mpcg, &f, &m);
+    adentu_grid_set_atoms (&mpcg, &f, &m);
 
 
 
@@ -274,9 +289,9 @@ int main (int argc, char *argv[])
 */
 
 
-    adentu_runnable_add_pre_func (&m, print_pre_event);
+    //adentu_runnable_add_pre_func (&m, print_pre_event);
     adentu_runnable_add_post_func (&m, print_event);
-    adentu_runnable_add_post_func (&m, print_post_event);
+    //adentu_runnable_add_post_func (&m, print_post_event);
 
     /* setup event engine */
     GSList *eList = NULL;

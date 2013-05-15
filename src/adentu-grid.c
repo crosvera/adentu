@@ -1,9 +1,25 @@
 /*
- * Carlos Rios Vera <crosvera@gmail.com>
- */
+    Adentu: An hybrid molecular dynamic software.
+    https://github.com/crosvera/adentu
+    
+    Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+
+    This program is free software: you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    version 3 as published by the Free Software Foundation.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 #include <stdlib.h>
 
+#include "vec3.h"
 #include "adentu-grid.h"
 #include "adentu-grid-cuda.h"
 
@@ -22,10 +38,10 @@ void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf)
     
     if (conf->type == ADENTU_GRID_MPC)
     {
-        vecSet (grid->origin,
-                grid->h.x,
-                grid->h.y,
-                grid->h.z);
+        vecSub (grid->origin,
+                grid->origin,
+                grid->h);
+
         grid->nCell.x++;
         grid->nCell.y++;
         grid->nCell.z++;
@@ -41,6 +57,7 @@ void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf)
     double zc = grid->nCell.z;
 
     grid->head = malloc (tCell * sizeof (int));
+    grid->linked = NULL;
     //grid->cells = (AdentuCell *) calloc (tCell, sizeof (AdentuCell));
     grid->cells.nAtoms = calloc (tCell, sizeof (int));
     grid->cells.vcm = calloc (tCell, sizeof (vec3f));
@@ -76,7 +93,6 @@ void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf)
                 grid->head[idx] = -1;
             }
     }
-
 }
 
 

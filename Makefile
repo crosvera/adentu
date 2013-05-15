@@ -93,7 +93,7 @@ LDFLAGS += `pkg-config --libs glib-2.0` -lm
 
 
 # Common includes and paths for CUDA and Adentu libs.
-INCLUDES      := -I$(CUDA_INC_PATH) -I. -I./event 
+INCLUDES      := -I$(CUDA_INC_PATH) -I./src -I./src/event 
 
 
 
@@ -106,66 +106,66 @@ build: adentu
 
 adentu-utils: vec3.h adentu-utils.h
 
-vec3.o: vec3.c
+vec3.o: src/vec3.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-vec3-cuda.o: vec3-cuda.cu
+vec3-cuda.o: src/vec3-cuda.cu
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-atom.o: adentu-atom.c
+adentu-atom.o: src/adentu-atom.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-atom-cuda.o: adentu-atom-cuda.cu
+adentu-atom-cuda.o: src/adentu-atom-cuda.cu
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-grid.o: adentu-grid.c
+adentu-grid.o: src/adentu-grid.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-grid-cuda.o: adentu-grid-cuda.cu
+adentu-grid-cuda.o: src/adentu-grid-cuda.cu
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-model.o: adentu-model.c
+adentu-model.o: src/adentu-model.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-neighbourhood.o: adentu-neighbourhood.c
+adentu-neighbourhood.o: src/adentu-neighbourhood.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
 # ADENTU EVENTS
-adentu-event.o: adentu-event.c
+adentu-event.o: src/adentu-event.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-event-bc.o: event/adentu-event-bc.c
+adentu-event-bc.o: src/event/adentu-event-bc.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-event-bc-cuda.o: event/adentu-event-bc-cuda.cu
+adentu-event-bc-cuda.o: src/event/adentu-event-bc-cuda.cu
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-event-mpc.o: event/adentu-event-mpc.c
+adentu-event-mpc.o: src/event/adentu-event-mpc.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-event-mpc-cuda.o: event/adentu-event-mpc-cuda.cu
+adentu-event-mpc-cuda.o: src/event/adentu-event-mpc-cuda.cu
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
-#adentu-event-gfc.o: event/adentu-event-gfc.c
-#	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
+adentu-event-gfc.o: src/event/adentu-event-gfc.c
+	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-#adentu-event-gfc-cuda.o: event/adentu-event-gfc-cuda.cu
-#	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
+adentu-event-gfc-cuda.o: src/event/adentu-event-gfc-cuda.cu
+	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-runnable.o: adentu-runnable.c
+adentu-runnable.o: src/adentu-runnable.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
 # ADENTU GRAPHICS
-adentu-graphic.o: adentu-graphic.c
+adentu-graphic.o: src/adentu-graphic.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu-cuda-utils.o: adentu-cuda-utils.cu
+adentu-cuda-utils.o: src/adentu-cuda-utils.cu
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu.o: adentu.c
+adentu.o: src/adentu.c
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
-adentu: vec3.o vec3-cuda.o adentu.o adentu-grid.o adentu-atom.o  adentu-model.o adentu-atom-cuda.o adentu-grid-cuda.o adentu-neighbourhood.o adentu-event.o adentu-event-bc.o adentu-event-bc-cuda.o adentu-event-mpc.o adentu-event-mpc-cuda.o adentu-runnable.o adentu-graphic.o adentu-cuda-utils.o
+adentu: vec3.o vec3-cuda.o adentu.o adentu-grid.o adentu-atom.o  adentu-model.o adentu-atom-cuda.o adentu-grid-cuda.o adentu-neighbourhood.o adentu-event.o adentu-event-bc.o adentu-event-bc-cuda.o adentu-event-mpc.o adentu-event-mpc-cuda.o adentu-runnable.o adentu-graphic.o adentu-cuda-utils.o adentu-event-gfc-cuda.o adentu-event-gfc.o
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) -o $@ $+ $(LDFLAGS)  $(EXTRA_LDFLAGS)
 
 
