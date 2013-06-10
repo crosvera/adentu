@@ -17,15 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __ADENTU_GRID_CUDA_H__
-#define __ADENTU_GRID_CUDA_H__
-
-#include "adentu-atom.h"
-#include "adentu-grid.h"
-
-void adentu_grid_cuda_set_atoms (AdentuGrid *grid, 
-                                 AdentuAtom *atoms, 
-                                 AdentuBoundaryCond *bCond);
+#include "adentu-model.h"
+#include "adentu-event.h"
 
 
-#endif /* __ADENTU_GRID_CUDA_H__ */
+void print_event (AdentuModel *model, AdentuEvent *event);
+
+void print_post_event (AdentuModel *model, AdentuEvent *event);
+
+void print_pre_event (AdentuModel *model, AdentuEvent *event);
+

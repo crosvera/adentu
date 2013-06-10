@@ -85,10 +85,24 @@ typedef struct _AdentuGridConfig {
 } AdentuGridConfig;
 
 
+typedef enum {
+    ADENTU_BOUNDARY_PBC,
+    ADENTU_BOUNDARY_BBC,
+    ADENTU_BOUNDARY_RBC,
+    ADENTU_BOUNDARY_FBC
+} AdentuBoundaryType;
+
+extern const char *AdentuBoundaryTypeStr[];
+
+
+typedef struct _AdentuBoundaryCond {
+    AdentuBoundaryType x, y, z;
+} AdentuBoundaryCond;
+
 
 void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf);
 
-//void adentu_grid_set_atoms (AdentuGrid *grid, AdentuAtom *atoms, AdentuModel *model);
+void adentu_grid_set_atoms (AdentuGrid *grid, AdentuAtom *atoms, AdentuBoundaryCond *bCond);
 
 
 

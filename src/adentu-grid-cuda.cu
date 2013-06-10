@@ -25,7 +25,6 @@
 #include <sys/time.h>
 
 #include "adentu-atom.h"
-#include "adentu-model.h"
 #include "adentu-grid.h"
 #include "vec3.h"
 #include "adentu-cuda-utils.h"
@@ -54,7 +53,7 @@ __global__ void adentu_grid_cuda_filling_kernel (int *head,
 extern "C"
 void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
                                  AdentuAtom *atoms,
-                                 AdentuModel *model)
+                                 AdentuBoundaryCond *bCond)
 {
 
     vec3f displace, originAux;
@@ -86,6 +85,8 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
         }
 
 
+    //printf ("nCell: %d, %d, %d\n", grid->nCell.x, grid->nCell.y, grid->nCell.z);
+    //printf ("tCell: %d\n", tCell);
     dim3 gDim;
     dim3 bDim;
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
@@ -98,7 +99,7 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
                                                      nAtoms,
                                                      grid->origin,
                                                      grid->h,
-                                                     model->bCond,
+                                                     *bCond,
                                                      grid->nCell);
 
     if (grid->linked != NULL)
@@ -143,14 +144,16 @@ __global__ void adentu_grid_cuda_filling_kernel (int *head,
         return;
 
     vec3i cell;
+    vec3f _pos = pos[idx];
     /*vecSet (cell, (pos[idx].x + origin.x)/h.x,
                   (pos[idx].y + origin.y)/h.y, 
                   (pos[idx].z + origin.z)/h.z);
    */
 
-    cell.x =  (pos[idx].x - origin.x)/h.x;
-    cell.y =  (pos[idx].y - origin.y)/h.y;
-    cell.z =  (pos[idx].z - origin.z)/h.z;
+
+    cell.x =  floor ((_pos.x - origin.x)/h.x);
+    cell.y =  floor ((_pos.y - origin.y)/h.y);
+    cell.z =  floor ((_pos.z - origin.z)/h.z);
    
     /* 
      * if boundaries are PBC, the particles at nCell.[x,y,z]-1 
@@ -163,15 +166,21 @@ __global__ void adentu_grid_cuda_filling_kernel (int *head,
     if (bCond.z == ADENTU_BOUNDARY_PBC && cell.z == (nCell.z-1))
         cell.z = 0;
 
+    //printf ("idx: %d> %d, %d, %d\n", idx, cell.x, cell.y, cell.z);
     int c = nCell.x * nCell.y * cell.z + nCell.x * cell.y + cell.x;
+    //printf ("idx: %d> pos: %f, %f, %f. C: %d\n", 
+    //        idx, _pos.x, _pos.y, _pos.z, c);
 
-    
 
     int i;
     if (atomicCAS (&head[c], -1, idx) != -1){
         i = head[c];
+        //printf ("h>idx: %d, C: %d, I: %d\n", idx, c, i);
         while (atomicCAS (&linked[i], -1, idx) != -1)
-            i = linked[i];
+            {
+                //printf (">idx: %d, I: %d\n", idx, i);
+                i = linked[i];
+            }
     }
     atomicAdd (&cellNAtoms[c], 1);
 }

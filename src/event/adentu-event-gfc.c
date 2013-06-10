@@ -35,7 +35,7 @@
 
 AdentuEventHandler AdentuGFCEventHandler = {adentu_event_gfc_init,
                                             adentu_event_gfc_is_valid,
-                                            adentu_event_gfc_attend,
+                                            adentu_event_gfc_attend2,
                                             adentu_event_gfc_get_next};
 
 
@@ -44,6 +44,7 @@ GSList *adentu_event_gfc_init (AdentuModel *model,
                                GSList *eList)
 {
     eList = adentu_event_schedule (eList, adentu_event_gfc_get_next (model));
+    //exit (1);
 
 
     return eList;
@@ -52,23 +53,114 @@ GSList *adentu_event_gfc_init (AdentuModel *model,
 
 AdentuEvent *adentu_event_gfc_get_next (AdentuModel *model)
 {
-    return adentu_event_gfc_cuda_get_next (model);
+    adentu_grid_set_atoms (model->gGrid, 
+                           model->grain, 
+                           &model->bCond);
+    adentu_grid_set_atoms (model->fGrid, 
+                           model->fluid, 
+                           &model->bCond);
+
+    AdentuEvent *ev = adentu_event_gfc_cuda_get_next (model);
+    ev->time += model->elapsedTime;
+
+    return ev;
 }
 
 
 int adentu_event_gfc_is_valid (AdentuModel *model,
                                AdentuEvent *event)
 {
-    int partner = event->partner;
-    int nEvents = event->nEvents;
-    AdentuAtom *fluid = model->fluid;
+    if (event->type != ADENTU_EVENT_GFC)
+        return 0;
 
-    if (fluid->nCol[partner] == nEvents)
+    int owner = event->owner;
+    int nEvents = event->nEvents;
+    AdentuAtom *grain = model->grain;
+
+    if (grain->nCol[owner] == nEvents)
         return 1;
 
     return 0;
 }
 
+
+void adentu_event_gfc_attend2 (AdentuModel *model,
+                               AdentuEvent *event)
+{
+    AdentuAtom *grain = model->grain;
+    AdentuAtom *fluid = model->fluid;
+
+    double dT = event->time - model->elapsedTime;
+
+    adentu_event_mpc_cuda_integrate (grain,
+                                     model->gGrid,
+                                     model->accel, dT);
+    adentu_grid_set_atoms (model->gGrid, 
+                           grain, 
+                           &model->bCond);
+
+
+    adentu_event_mpc_cuda_integrate (fluid,
+                                     model->fGrid,
+                                     model->accel, dT);
+    adentu_grid_set_atoms (model->fGrid, 
+                           fluid, 
+                           &model->bCond);
+
+
+    int owner = event->owner;
+    int partner = event->partner;
+    
+    vec3f *gvel = &grain->vel[owner];
+    vec3f *fvel = &fluid->vel[partner];
+    vec3f *gpos = &grain->pos[owner];
+    vec3f *fpos = &fluid->pos[partner];
+    double gmass = grain->mass[owner];
+    double fmass = fluid->mass[partner];
+    double gradius = grain->radius[owner];
+    double fradius = fluid->radius[partner];
+
+    double radius = gradius + fradius;
+    vec3f pos, vel;
+    vecSub (pos, *fpos, *gpos);
+    vecSub (vel, *fvel, *gvel);
+
+    double pu = vecMod (pos);
+    
+    if (fabs (pu - radius) > 10e-6)
+        {
+            g_message ("Bad Prediction! - PU: %f != Radius: %f", pu, radius);
+            //return ;
+        }
+
+    vec3f n;
+    vecScale (n, pos, pu);
+   
+    g_message ("radius: %f, pu: %f, pos: (%f, %f, %f), n: (%f, %f, %f), vecDot (n, n) = %f", 
+                radius, pu, pos.x, pos.y, pos.z, n.x, n.y, n.z, vecDot (n, n));
+
+    double VN = vecDot (n, vel);
+
+
+    double dP = (2 * gmass * fmass * VN) / (gmass + fmass);
+    vec3f j;
+    
+    j.x = dP * n.x;
+    j.y = dP * n.y;
+    j.z = dP * n.z;
+   
+    gvel->x = gvel->x + j.x / gmass;
+    gvel->y = gvel->y + j.y / gmass;
+    gvel->z = gvel->z + j.z / gmass;
+
+    fvel->x = fvel->x - j.x / fmass;
+    fvel->y = fvel->y - j.y / fmass;
+    fvel->z = fvel->z - j.z / fmass;
+    
+
+    grain->nCol[owner]++;
+    fluid->nCol[partner]++;
+}
 
 
 void adentu_event_gfc_attend (AdentuModel *model,
@@ -88,8 +180,12 @@ void adentu_event_gfc_attend (AdentuModel *model,
                                      model->accel, dT);
 
 
-    adentu_grid_set_atoms (model->gGrid, grain, model);
-    adentu_grid_set_atoms (model->fGrid, fluid, model);
+    adentu_grid_set_atoms (model->gGrid, 
+                           grain, 
+                           &model->bCond);
+    adentu_grid_set_atoms (model->fGrid, 
+                           fluid, 
+                           &model->bCond);
 
 
     int owner = event->owner;

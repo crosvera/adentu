@@ -94,7 +94,7 @@ __global__ void adentu_event_mpc_cuda_integrate_kernel (vec3f *pos,
                                                         vec3f accel,
                                                         int nAtoms)
 {
-    int idx = threadIdx.x + blockIdx.x * gridDim.x;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (idx >= nAtoms)
         return ;
 
@@ -206,7 +206,7 @@ __global__ void adentu_event_mpc_cuda_vcm_kernel (vec3f *vcm,
                                                   int nAtoms)
 {
 
-    int idx = threadIdx.x + blockIdx.x * gridDim.x;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (idx >= tCell)
         return ;
 

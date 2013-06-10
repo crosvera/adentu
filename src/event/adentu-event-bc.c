@@ -194,8 +194,9 @@ void adentu_event_bc_attend (AdentuModel *model,
 
     //model->elapsedTime = event->time;
     adentu_event_bc_attend2 (model, event);
-    AdentuAtom *atom = (event->type == ADENTU_EVENT_BC_GRAIN) ? model->grain : model->fluid;
-    /*printf ("%f\n", event->time);
+    
+    /*AdentuAtom *atom = (event->type == ADENTU_EVENT_BC_GRAIN) ? model->grain : model->fluid;
+    printf ("%f\n", event->time);
     puts ("BC Event");
     for (int i = 0; i < atom->n; ++i)
         printf (">%4d    %f %f %f    %f %f %f\n", i, 

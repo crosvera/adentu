@@ -54,6 +54,23 @@ int adentu_neighbourhood_get_cell_from_atom (int atomId,
 
 
 
+int **adentu_neighbourhood_get_cell_neighbourhood2 (int cellId,
+                                                    int nAtoms,
+                                                    AdentuGrid *grid)
+{
+    int **cells = malloc (nAtoms * sizeof(int *));
+
+    for (int i = 0; i < nAtoms; ++i)
+        {
+            cells[i] = malloc (27 * sizeof(int));
+            adentu_neighbourhood_get_cell_neighbourhood (cellId,
+                                                         grid,
+                                                         cells[i]);
+        }
+
+    return cells;
+}
+
 
 void adentu_neighbourhood_get_cell_neighbourhood (int cellId, 
                                                   AdentuGrid *grid, 
@@ -218,5 +235,25 @@ int *adentu_neighbourhood_get_atoms (int *nAtoms,
                 }
             }
     }
+    return neighbours;
+}
+
+
+int *adentu_neighbourhood_get_atoms_from_cell (int cell,
+                                               AdentuGrid *grid)
+{
+    int i = 0, n = grid->cells.nAtoms[cell];
+    if (n == 0)
+        return NULL;
+
+    int *neighbours = malloc (sizeof (int) * n);
+    int a = grid->head[cell];
+
+    while (a != -1)
+    {
+        neighbours[i++] = a;
+        a = grid->linked[a];
+    }
+
     return neighbours;
 }

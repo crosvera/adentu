@@ -27,19 +27,6 @@
 #include "adentu-grid.h"
 
 
-typedef enum {
-    ADENTU_BOUNDARY_PBC,
-    ADENTU_BOUNDARY_BBC,
-    ADENTU_BOUNDARY_RBC,
-    ADENTU_BOUNDARY_FBC
-} AdentuBoundaryType;
-
-
-
-typedef struct _AdentuBoundaryCond {
-    AdentuBoundaryType x, y, z;
-} AdentuBoundaryCond;
-
 
 
 typedef struct _AdentuModel {
@@ -75,6 +62,5 @@ typedef struct _AdentuModel {
 
 
 
-void adentu_model_add_atoms (AdentuModel *model, AdentuAtom *atoms);
 
 #endif /* __ADENTU_MODEL_H__ */

@@ -35,14 +35,14 @@
 extern "C" {
     #include "adentu-neighbourhood.h"
     #include "adentu-neighbourhood-cuda.h"
-    #include "adentu-event-gfc-cuda.h"
+    #include "adentu-event-ggc-cuda.h"
     #include "vec3-cuda.h"
 }
 
 
 
 
-__global__ void adentu_event_gfc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
+__global__ void adentu_event_ggc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
                                                              vec3f gpos,
                                                              vec3f gvel,
                                                              double radius,
@@ -52,79 +52,55 @@ __global__ void adentu_event_gfc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
                                                              int nAtoms);
 
 
-__global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
+__global__ void adentu_event_ggc_cuda_get_next_kernel (AdentuEvent *ev,
                                                        int *cells,
                                                        vec3f *gpos,
                                                        vec3f *gvel,
                                                        double *gradius,
                                                        int nAtoms,
-                                                       vec3f *fpos,
-                                                       vec3f *fvel,
-                                                       double *fradius,
                                                        int *head,
                                                        int *linked);
 
 
 
 extern "C"
-AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
+AdentuEvent *adentu_event_ggc_cuda_get_next (AdentuModel *model)
 {
 
     AdentuAtom *grain = model->grain;
-    AdentuAtom *fluid = model->fluid;
 
     int nGrains = grain->n;
-    int nFluids = fluid->n;
     double *g_radius = grain->radius, *d_g_radius = NULL;
-    double *f_radius = fluid->radius, *d_f_radius = NULL;
 
     vec3f *g_pos = grain->pos, *d_g_pos = NULL;
-    vec3f *f_pos = fluid->pos, *d_f_pos = NULL;
     
     vec3f *g_vel = grain->vel, *d_g_vel = NULL;
-    vec3f *f_vel = fluid->vel, *d_f_vel = NULL;
 
     CUDA_CALL (cudaMalloc ((void **)&d_g_pos, nGrains * sizeof (vec3f)));
-    CUDA_CALL (cudaMalloc ((void **)&d_f_pos, nFluids * sizeof (vec3f)));
     
     CUDA_CALL (cudaMalloc ((void **)&d_g_vel, nGrains * sizeof (vec3f)));
-    CUDA_CALL (cudaMalloc ((void **)&d_f_vel, nFluids * sizeof (vec3f)));
 
     CUDA_CALL (cudaMalloc ((void**)&d_g_radius, nGrains * sizeof (double)));
     CUDA_CALL (cudaMemcpy (d_g_radius, g_radius, nGrains * sizeof (double),
                            cudaMemcpyHostToDevice));
 
-    CUDA_CALL (cudaMalloc ((void**)&d_f_radius, nFluids * sizeof (double)));
-    CUDA_CALL (cudaMemcpy (d_f_radius, f_radius, nFluids * sizeof (double),
-                           cudaMemcpyHostToDevice));
-
 
     CUDA_CALL (cudaMemcpy (d_g_pos, g_pos, nGrains * sizeof (vec3f),
                            cudaMemcpyHostToDevice));
-    CUDA_CALL (cudaMemcpy (d_f_pos, f_pos, nFluids * sizeof (vec3f),
-                           cudaMemcpyHostToDevice));
-
     CUDA_CALL (cudaMemcpy (d_g_vel, g_vel, nGrains * sizeof (vec3f),
                            cudaMemcpyHostToDevice));
-    CUDA_CALL (cudaMemcpy (d_f_vel, f_vel, nFluids * sizeof (vec3f),
-                           cudaMemcpyHostToDevice));
+    
+    int tCell = model->gGrid->tCell;
 
-/*
-    vec3i nCell = model->gGrid->nCell;
-    vec3f origin = model->gGrid->origin;
-    vec3f h = model->gGrid->h; */
-
-    int tCell = model->fGrid->tCell;
-
-    int *head = model->fGrid->head, *d_head = NULL;
-    int *linked = model->fGrid->linked, *d_linked = NULL;
+    int *head = model->gGrid->head, *d_head = NULL;
+    int *linked = model->gGrid->linked, *d_linked = NULL;
 
     CUDA_CALL (cudaMalloc ((void **)&d_head, tCell * sizeof (int)));
     CUDA_CALL (cudaMemcpy (d_head, head, tCell * sizeof (int),
                            cudaMemcpyHostToDevice));
 
-    CUDA_CALL (cudaMalloc ((void **)&d_linked, nFluids * sizeof (int)));
-    CUDA_CALL (cudaMemcpy (d_linked, linked, nFluids * sizeof (int),
+    CUDA_CALL (cudaMalloc ((void **)&d_linked, nGrains * sizeof (int)));
+    CUDA_CALL (cudaMemcpy (d_linked, linked, nGrains * sizeof (int),
                            cudaMemcpyHostToDevice));
 
 
@@ -144,15 +120,12 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
 
     CUDA_CALL (cudaMalloc ((void **)&d_events, gDim.x * sizeof (AdentuEvent)));
 
-    adentu_event_gfc_cuda_get_next_kernel<<<gDim, bDim>>> (d_events,
+    adentu_event_ggc_cuda_get_next_kernel<<<gDim, bDim>>> (d_events,
                                                            d_neighbours,
                                                            d_g_pos,
                                                            d_g_vel,
                                                            d_g_radius,
                                                            nGrains,
-                                                           d_f_pos,
-                                                           d_f_vel,
-                                                           d_f_radius,
                                                            d_head,
                                                            d_linked);
 
@@ -161,10 +134,10 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
                            cudaMemcpyDeviceToHost));
 
     AdentuEvent *ev = (AdentuEvent *) malloc (sizeof (AdentuEvent));
-    ev->type = ADENTU_EVENT_GFC;
+    ev->type = ADENTU_EVENT_GGC;
     ev->time = DBL_MAX;
     ev->owner = ev->partner = -1;
-    ev->eventData = NULL;
+    ev->eventData = (int *) malloc (sizeof (int));
 
     for (int i = 0; i < gDim.x; ++i)
         {
@@ -174,16 +147,14 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
                     ev->owner = events[i].owner;
                     ev->partner = events[i].partner;
                     ev->nEvents = grain->nCol[ev->owner];
+                    *(int *)ev->eventData = grain->nCol[ev->partner];
                 }
         }
 
 
     CUDA_CALL (cudaFree (d_g_pos));
-    CUDA_CALL (cudaFree (d_f_pos));
     CUDA_CALL (cudaFree (d_g_vel));
-    CUDA_CALL (cudaFree (d_f_vel));
     CUDA_CALL (cudaFree (d_g_radius));
-    CUDA_CALL (cudaFree (d_f_radius));
     CUDA_CALL (cudaFree (d_head));
     CUDA_CALL (cudaFree (d_linked));
     CUDA_CALL (cudaFree (d_neighbours));
@@ -202,15 +173,12 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
 
 
 
-__global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
+__global__ void adentu_event_ggc_cuda_get_next_kernel (AdentuEvent *ev,
                                                        int *cells,
                                                        vec3f *gpos,
                                                        vec3f *gvel,
                                                        double *gradius,
                                                        int nAtoms,
-                                                       vec3f *fpos,
-                                                       vec3f *fvel,
-                                                       double *fradius,
                                                        int *head,
                                                        int *linked)
 {
@@ -219,7 +187,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
     int bid = blockIdx.x;
 
     __shared__ AdentuEvent _events[128];
-    _events[tid].type = ADENTU_EVENT_GFC;
+    _events[tid].type = ADENTU_EVENT_GGC;
     _events[tid].time = DBL_MAX;
     _events[tid].owner = -1;
     _events[tid].partner = -1;
@@ -237,7 +205,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
     double radius;
     int _cells[27], c, a;
     AdentuEvent _ev;
-    _ev.type = ADENTU_EVENT_GFC;
+    _ev.type = ADENTU_EVENT_GGC;
     _ev.time = DBL_MAX;
     _ev.owner = idx;
 
@@ -281,9 +249,14 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
             a = head[c];
             while (a != -1)
                 {
-                    _fpos = fpos[a];
-                    _fvel = fvel[a];
-                    radius = fradius[a] + _gradius;
+                    if (a == idx)
+                        {
+                            a = linked[a];
+                            continue;
+                        }
+                    _fpos = gpos[a];
+                    _fvel = gvel[a];
+                    radius = gradius[a] + _gradius;
                     vecSub (pos, _fpos, _gpos);
                     vecSub (vel, _fvel, _gvel);
 
@@ -339,7 +312,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
 
 
 
-__global__ void adentu_event_gfc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
+__global__ void adentu_event_ggc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
                                                              vec3f gpos,
                                                              vec3f gvel,
                                                              double radius,
@@ -407,7 +380,7 @@ __global__ void adentu_event_gfc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
 
     if (tid == 0)
         {
-            ev[bid].type = ADENTU_EVENT_GFC;
+            ev[bid].type = ADENTU_EVENT_GGC;
             ev[bid].partner = events[0].partner;
             ev[bid].time = events[0].time;
         }

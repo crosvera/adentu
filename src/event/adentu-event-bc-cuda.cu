@@ -137,7 +137,7 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
     e1->nEvents = grain->nCol[atomIds[h]];
     e1->eventData = (int *) malloc (sizeof (int));
     *(int*)e1->eventData = walls[h];
-    
+   
 
     CUDA_CALL (cudaFree (d_g_pos));
     CUDA_CALL (cudaFree (d_g_vel));
@@ -166,7 +166,7 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
                                                     int nAtoms)
 {
 
-    int idx = threadIdx.x + blockIdx.x * gridDim.x;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
     int tid = threadIdx.x;
 
     __shared__ double Times[128];
@@ -486,7 +486,7 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel2 (double *times,
                                                      int nAtoms)
 {
 
-    int idx = threadIdx.x + blockIdx.x * gridDim.x;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (idx >= nAtoms)
         return ;

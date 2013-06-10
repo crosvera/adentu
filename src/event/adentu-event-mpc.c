@@ -84,7 +84,7 @@ void adentu_event_mpc_attend (AdentuModel *model,
 
     adentu_grid_set_atoms (model->mpcGrid,
                            model->fluid, 
-                           model);
+                           &model->bCond);
     
     adentu_event_mpc_cuda (model);
     AdentuAtom *atom = model->fluid;

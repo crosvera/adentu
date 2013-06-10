@@ -52,8 +52,10 @@ AdentuEvent *adentu_event_get_next (GSList **eList)
 
 GSList *adentu_event_schedule (GSList *eList, AdentuEvent *event)
 {
-    //printf ("Scheduling: owner: %d, type: %s, time: %F\n", 
-    //        event->owner, AdentuEventTypeStr[event->type], event->time);
+    /*g_message ("Scheduling: owner: %d, type: %s, time: %F, nCol: %d", 
+            event->owner, AdentuEventTypeStr[event->type], event->time,
+            event->nEvents);*/
+
     return g_slist_insert_sorted (eList,
                            event,
                            adentu_event_compare);
@@ -127,8 +129,10 @@ GSList *adentu_event_loop (GSList *eList,
                                     (*handler[t]).event_get_next (model));
             }
         else
-            eList = adentu_event_schedule (eList,
-                                        (*handler[t]).event_get_next (model));
+            {
+                eList = adentu_event_schedule (eList,
+                                            (*handler[t]).event_get_next (model));
+            }
 
         free (ev->eventData);
         free (ev);

@@ -23,6 +23,17 @@
 #include "adentu-grid.h"
 #include "adentu-grid-cuda.h"
 
+
+
+const char *AdentuBoundaryTypeStr[] = {
+    [ADENTU_BOUNDARY_PBC] = "PBC",  
+    [ADENTU_BOUNDARY_BBC] = "BBC",  
+    [ADENTU_BOUNDARY_RBC] = "RBC",  
+    [ADENTU_BOUNDARY_FBC] = "FBC"
+}; 
+
+
+
 void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf)
 {
     grid->origin = conf->origin;
@@ -96,7 +107,7 @@ void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf)
 }
 
 
-void adentu_grid_set_atoms (AdentuGrid *grid, AdentuAtom *atoms, AdentuModel *model)
+void adentu_grid_set_atoms (AdentuGrid *grid, AdentuAtom *atoms, AdentuBoundaryCond *bCond)
 {
-    adentu_grid_cuda_set_atoms (grid, atoms, model);
+    adentu_grid_cuda_set_atoms (grid, atoms, bCond);
 }

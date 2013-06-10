@@ -37,15 +37,12 @@
 #include "adentu-event-mpc.h"
 #include "adentu-event-bc.h"
 #include "adentu-event-gfc.h"
+#include "adentu-event-ggc.h"
 
 
-const char *AdentuBoundaryTypeStr[] = {
-    [ADENTU_BOUNDARY_PBC] = "PBC",  
-    [ADENTU_BOUNDARY_BBC] = "BBC",  
-    [ADENTU_BOUNDARY_RBC] = "RBC",  
-    [ADENTU_BOUNDARY_FBC] = "FBC"
-}; 
-
+/* usr modules */
+#include "usr/atoms-pos-cuda.h"
+#include "usr/print-event-info.h"
 
 
 AdentuEventHandler *handler[] = {
@@ -53,67 +50,12 @@ AdentuEventHandler *handler[] = {
     [ADENTU_EVENT_MPC] = &AdentuMPCEventHandler,
     [ADENTU_EVENT_BC_GRAIN] = &AdentuBCGrainEventHandler,
     [ADENTU_EVENT_BC_FLUID] = &AdentuBCFluidEventHandler,
-    [ADENTU_EVENT_GGC] = NULL,
-    [ADENTU_EVENT_GFC] = /*&AdentuGFCEventHandler,*/ NULL, 
+    [ADENTU_EVENT_GGC] = &AdentuGGCEventHandler, /*NULL, */
+    [ADENTU_EVENT_GFC] = &AdentuGFCEventHandler,/* NULL,*/ 
     [ADENTU_EVENT_END] = NULL
 };
 
-void print_event (AdentuModel *model, AdentuEvent *event)
-{
-    printf ("Event type: %s, time: %f\n", 
-            AdentuEventTypeStr[event->type],
-            event->time);
-}
 
-void print_post_event (AdentuModel *model, AdentuEvent *event)
-{
-    if (event->type != ADENTU_EVENT_BC_GRAIN &&
-        event->type != ADENTU_EVENT_BC_FLUID)
-            return;
-
-    int own = event->owner;
-    AdentuAtom *atom;
-    printf ("pos> Atom: %d, ", own);
-    printf ("Time: %f\n", event->time);
-    if (event->type == ADENTU_EVENT_BC_GRAIN)
-        atom = model->grain;
-    else
-        atom = model->fluid;
-
-    printf ("Vel: ");
-    print3f (atom->vel[own]);
-    printf ("Pos: ");
-    print3f (atom->pos[own]);
-
-    puts ("");
-
-}
-
-void print_pre_event (AdentuModel *model, AdentuEvent *event)
-{
-    if (event->type != ADENTU_EVENT_BC_GRAIN && 
-        event->type != ADENTU_EVENT_BC_FLUID)
-            return;
-
-
-    //printf ("preEvent: %s\n", AdentuEventTypeStr[event->type]);
-    int own = event->owner;
-    AdentuAtom *atom;
-    printf ("pre> Atom: %d, ", own);
-    printf ("Time: %f\n", model->elapsedTime);
-    if (event->type == ADENTU_EVENT_BC_GRAIN)
-        atom = model->grain;
-    else
-        atom = model->fluid;
-
-    printf ("Vel: ");
-    print3f (atom->vel[own]);
-    printf ("Pos: ");
-    print3f (atom->pos[own]);
-
-    puts ("");
-    
-}
 
 
 int main (int argc, char *argv[])
@@ -128,8 +70,8 @@ int main (int argc, char *argv[])
     /* crear modelo */
     AdentuModel m;
     vecSet (m.accel, 3.0, 2.0, 1.0);
-    m.totalTime = 100;
-    m.dT = 10;
+    m.totalTime = 10;
+    m.dT = 5;
     m.alpha = 3.141593;
     m.gTemp = 4.0;
     m.fTemp = 0.0;
@@ -152,8 +94,8 @@ int main (int argc, char *argv[])
     /* creating grain grid */
     AdentuGridConfig gc;
     vecSet (gc.origin, 0.0, 0.0, 0.0);
-    vecSet (gc.length, 10.0, 20.0, 30.0);
-    vecSet (gc.cells, 5, 2, 3);
+    vecSet (gc.length, 128.0, 128.0, 128.0);
+    vecSet (gc.cells, 8, 8, 8);
     gc.type = ADENTU_GRID_DEFAULT;
 
     AdentuGrid g;
@@ -182,43 +124,44 @@ int main (int argc, char *argv[])
 
     /* create grains */
     AdentuAtomConfig ac;
-    ac.nAtoms = 8;
+    ac.nAtoms = 512;
     ac.type = ADENTU_ATOM_GRAIN;
     ac.mass.from = ac.mass.to = 5.0;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
-    ac.radii.from = ac.radii.to = 2.0;
+    ac.radii.from = ac.radii.to = 1.0;
     ac.radii.rangeType = ADENTU_PROP_CONSTANT;
 
     AdentuAtom a;
     adentu_atom_create_from_config (&a, &ac);
     adentu_atom_set_init_vel (&a, &m);
-    adentu_atom_set_init_pos (&a, &g); 
+    //adentu_atom_set_init_pos (&a, &g); 
 
     /*set grains into the model*/
     m.grain = &a;
 
     /* set atoms into grid */
-    adentu_grid_set_atoms (&g, &a, &m);
+    adentu_grid_set_atoms (&g, &a, &m.bCond);
 
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms = 8;
+    ac.nAtoms = 1024;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
-    ac.radii.from = ac.radii.to = 0.1;
+    ac.radii.from = ac.radii.to = 0.001;
     ac.radii.rangeType = ADENTU_PROP_CONSTANT;
 
     AdentuAtom f;
     adentu_atom_create_from_config (&f, &ac);
     adentu_atom_set_init_vel (&f, &m);
-    adentu_atom_set_init_pos (&f, &fg);
+    //adentu_atom_set_init_pos (&f, &fg);
     m.fluid = &f;
-    adentu_grid_set_atoms (&fg, &f, &m);
-    adentu_grid_set_atoms (&mpcg, &f, &m);
+    adentu_grid_set_atoms (&fg, &f, &m.bCond);
+    adentu_grid_set_atoms (&mpcg, &f, &m.bCond);
 
 
+    adentu_usr_cuda_set_atoms_pos (&m);
 
 
     /* General debug Info */
@@ -289,9 +232,9 @@ int main (int argc, char *argv[])
 */
 
 
-    //adentu_runnable_add_pre_func (&m, print_pre_event);
-    adentu_runnable_add_post_func (&m, print_event);
-    //adentu_runnable_add_post_func (&m, print_post_event);
+    adentu_runnable_add_pre_func (&m, print_pre_event);
+    //adentu_runnable_add_post_func (&m, print_event);
+    adentu_runnable_add_post_func (&m, print_post_event);
 
     /* setup event engine */
     GSList *eList = NULL;

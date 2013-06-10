@@ -17,15 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __ADENTU_GRID_CUDA_H__
-#define __ADENTU_GRID_CUDA_H__
+#ifndef __ADENTU_NEIGHBOURHOOD_CUDA_H__
+#define __ADENTU_NEIGHBOURHOOD_CUDA_H__
 
-#include "adentu-atom.h"
-#include "adentu-grid.h"
+int *adentu_neighbourhood_cuda_get_cell_neighbourhood (AdentuAtom *atoms,
+                                                       AdentuGrid *grid);
 
-void adentu_grid_cuda_set_atoms (AdentuGrid *grid, 
-                                 AdentuAtom *atoms, 
-                                 AdentuBoundaryCond *bCond);
-
-
-#endif /* __ADENTU_GRID_CUDA_H__ */
+#endif /* __ADENTU_NEIGHBOURHOOD_CUDA_H__ */

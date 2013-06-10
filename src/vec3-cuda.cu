@@ -57,7 +57,7 @@ void vRand3f_cuda (vec3f *d_v, int n)
 
 __global__ void set_seed (curandState *states, unsigned long seed, int n)
 {
-    int idx = threadIdx.x + blockIdx.x * gridDim.x;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (idx >= n)
         return ;
 
@@ -67,7 +67,7 @@ __global__ void set_seed (curandState *states, unsigned long seed, int n)
 
 __global__ void vRand3f_cuda_generate (vec3f *v, curandState *states, int n)
 {
-    int idx = threadIdx.x + blockIdx.x * gridDim.x;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
     if (idx >= n)
         return ;
 
