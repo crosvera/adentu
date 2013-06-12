@@ -45,8 +45,9 @@ void vRand3f_cuda (vec3f *d_v, int n)
     curandState *d_states;
     CUDA_CALL (cudaMalloc ((void **)&d_states, n * sizeof (curandState)));
     
-    dim3 gDim (1);
-    dim3 bDim (n);
+    dim3 gDim;
+    dim3 bDim;
+    adentu_cuda_set_grid (&gDim, &bDim, n);
 
     set_seed<<<gDim, bDim>>> (d_states, time (NULL), n);
     vRand3f_cuda_generate<<<gDim, bDim>>> (d_v, d_states, n);

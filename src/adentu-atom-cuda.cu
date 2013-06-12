@@ -31,6 +31,7 @@
 #include "adentu-cuda-utils.h"
 
 extern "C" {
+    #include "vec3-cuda.h"
     #include "adentu-atom-cuda.h"
 }
 
@@ -62,9 +63,13 @@ void adentu_atom_cuda_set_init_vel (AdentuAtom *atoms, AdentuModel *model)
     CUDA_CALL (cudaMemcpy (d_vel, atoms->vel, nAtoms * sizeof (vec3f), cudaMemcpyHostToDevice));
 
     
-    dim3 gDim (1);
-    dim3 bDim (nAtoms);
+    vRand3f_cuda (d_vel, nAtoms);
 
+
+    dim3 gDim ;
+    dim3 bDim ;
+
+    adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
 
     kernel1 <<<gDim, bDim>>> (d_vel, nAtoms, velInit);
     CUDA_CALL (cudaMemcpy (atoms->vel, d_vel, nAtoms * sizeof (vec3f), cudaMemcpyDeviceToHost));
@@ -179,7 +184,8 @@ void adentu_atom_cuda_set_init_pos (AdentuAtom *atoms, AdentuGrid *grid)
 
     curandGenerator_t gen;
     curandCreateGenerator (&gen, CURAND_RNG_PSEUDO_DEFAULT);
-    curandSetPseudoRandomGeneratorSeed (gen, time(NULL));
+    //curandSetPseudoRandomGeneratorSeed (gen, time(NULL));
+    curandSetPseudoRandomGeneratorSeed (gen, 1234567);
     curandGenerateUniformDouble (gen, d_rands, nAtoms * 6);
     curandDestroyGenerator (gen);
 

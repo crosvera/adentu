@@ -124,6 +124,7 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
     CUDA_CALL (cudaFree (d_cellNAtoms));
     CUDA_CALL (cudaFree (d_head));
     CUDA_CALL (cudaFree (d_linked));
+
 }
 
 

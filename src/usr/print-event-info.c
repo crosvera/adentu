@@ -43,7 +43,7 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
 
     AdentuAtom *atom1, *atom2;
     
-    printf ("pos> type: %s, time: %f ", AdentuEventTypeStr[event->type],
+    printf ("pos> type: %s, time: %.10f ", AdentuEventTypeStr[event->type],
                                         event->time);
     
     if (event->type == ADENTU_EVENT_BC_GRAIN ||
@@ -58,6 +58,7 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
             print3f (atom1->vel[owner]);
             printf (" Pos: ");
             print3f (atom1->pos[owner]);
+            puts ("");
             puts ("");
         }
     else
@@ -80,6 +81,7 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
             printf (" Partner Pos: ");
             print3f (atom2->pos[owner]);
             puts ("");
+            puts ("");
         }
 
 }
@@ -92,8 +94,8 @@ void print_pre_event (AdentuModel *model, AdentuEvent *event)
 
     AdentuAtom *atom1, *atom2;
     
-    printf ("pre> type: %s, time: %f ", AdentuEventTypeStr[event->type],
-                                        event->time);
+    printf ("pre> type: %s, time: %.10f ", AdentuEventTypeStr[event->type],
+                                        model->elapsedTime);
     
     if (event->type == ADENTU_EVENT_BC_GRAIN ||
         event->type == ADENTU_EVENT_BC_FLUID)

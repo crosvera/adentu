@@ -60,10 +60,15 @@ AdentuEventHandler *handler[] = {
 
 int main (int argc, char *argv[])
 {
+    g_message ("Reseting CUDA Device.");
+    adentu_usr_cuda_reset_device ();
 
+    g_message ("Initializing adentu.");
     //set seeds
-    srand (time (NULL));
-    srand48 (time (NULL));
+    //srand (time (NULL));
+    //srand48 (time (NULL));
+    srand (1234567);
+    srand48 (1234567);
     /* leer configuración */
 
 
@@ -94,8 +99,8 @@ int main (int argc, char *argv[])
     /* creating grain grid */
     AdentuGridConfig gc;
     vecSet (gc.origin, 0.0, 0.0, 0.0);
-    vecSet (gc.length, 128.0, 128.0, 128.0);
-    vecSet (gc.cells, 8, 8, 8);
+    vecSet (gc.length, 3.1, 3.1, 3.1);
+    vecSet (gc.cells, 3, 3, 3);
     gc.type = ADENTU_GRID_DEFAULT;
 
     AdentuGrid g;
@@ -124,11 +129,11 @@ int main (int argc, char *argv[])
 
     /* create grains */
     AdentuAtomConfig ac;
-    ac.nAtoms = 512;
+    ac.nAtoms = 27;
     ac.type = ADENTU_ATOM_GRAIN;
     ac.mass.from = ac.mass.to = 5.0;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
-    ac.radii.from = ac.radii.to = 1.0;
+    ac.radii.from = ac.radii.to = 0.500000;
     ac.radii.rangeType = ADENTU_PROP_CONSTANT;
 
     AdentuAtom a;
@@ -140,16 +145,16 @@ int main (int argc, char *argv[])
     m.grain = &a;
 
     /* set atoms into grid */
-    adentu_grid_set_atoms (&g, &a, &m.bCond);
+    //adentu_grid_set_atoms (&g, &a, &m.bCond);
 
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms = 1024;
+    ac.nAtoms = 64;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
-    ac.radii.from = ac.radii.to = 0.001;
+    ac.radii.from = ac.radii.to = 0.00000000000000;
     ac.radii.rangeType = ADENTU_PROP_CONSTANT;
 
     AdentuAtom f;
@@ -157,8 +162,8 @@ int main (int argc, char *argv[])
     adentu_atom_set_init_vel (&f, &m);
     //adentu_atom_set_init_pos (&f, &fg);
     m.fluid = &f;
-    adentu_grid_set_atoms (&fg, &f, &m.bCond);
-    adentu_grid_set_atoms (&mpcg, &f, &m.bCond);
+    //adentu_grid_set_atoms (&fg, &f, &m.bCond);
+    //adentu_grid_set_atoms (&mpcg, &f, &m.bCond);
 
 
     adentu_usr_cuda_set_atoms_pos (&m);

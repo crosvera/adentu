@@ -120,14 +120,14 @@ void adentu_event_ggc_attend (AdentuModel *model,
     
     if (fabs (pu - radius) > 10e-6)
         {
-            g_message ("Bad Prediction! - PU: %f != Radius: %f", pu, radius);
+            printf ("Bad Prediction! - PU: %f != Radius: %f\n", pu, radius);
             //return ;
         }
 
     vec3f n;
     vecScale (n, pos, pu);
    
-    g_message ("radius: %f, pu: %f, pos: (%f, %f, %f), n: (%f, %f, %f), vecDot (n, n) = %f", 
+    printf ("radius: %f, pu: %f, pos: (%f, %f, %f), n: (%f, %f, %f), vecDot (n, n) = %f\n", 
                 radius, pu, pos.x, pos.y, pos.z, n.x, n.y, n.z, vecDot (n, n));
 
     double VN = vecDot (n, vel);

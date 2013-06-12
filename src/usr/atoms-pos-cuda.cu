@@ -36,6 +36,17 @@ extern "C" {
 }
 
 
+
+
+extern "C"
+void adentu_usr_cuda_reset_device (void)
+{
+    cudaDeviceReset ();
+}
+
+
+
+
 int set_fluid_cell_with_particles (vec3f *pos,
                                    int nAtoms,
                                    int Nfcg,
@@ -75,7 +86,7 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     double radius = grain->radius[0];
 
     AdentuGrid *gGrid = model->gGrid;
-    //AdentuGrid *fGrid = model->fGrid;
+    AdentuGrid *fGrid = model->fGrid;
 
     vec3f g_origin = gGrid->origin;
     //vec3f f_origin = fGrid->origin;
@@ -87,7 +98,7 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     //vec3i f_nCell = fGrid->nCell;
 
     int g_tCell = gGrid->tCell;
-    //int f_tCell = fGrid->tCell;
+    int f_tCell = fGrid->tCell;
 
     vec3f g_h = gGrid->h;
     //vec3f f_h = fGrid->h;
@@ -96,16 +107,21 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     int nFluids = fluid->n;
 
 
-    if (g_tCell > nGrains)
+    if (g_tCell < nGrains)
         g_error ("The number of atoms is greater than the number of grid cells.");
-    if (g_h.x < radius ||
-        g_h.y < radius ||
-        g_h.z < radius)
+    if (g_h.x < radius*2 ||
+        g_h.y < radius*2 ||
+        g_h.z < radius*2)
             g_error ("The size of the cells is less than the size of grain radius");
 
 
     int *g_head = gGrid->head;
-    //int *f_head = fGrid->head;
+    int *f_head = fGrid->head;
+
+    fGrid->linked = (int *) malloc (nFluids * sizeof (int));
+    //int *g_linked = gGrid->linked;
+    int *f_linked = fGrid->linked;
+    memset (f_linked, -1, nFluids * sizeof (int));
 
     int *d_g_head = NULL;
     //int *d_f_head = NULL;
@@ -155,6 +171,29 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
                            cudaMemcpyDeviceToHost));
 
 
+    /* print atoms in head */
+/*    for (int c = 0; c < g_tCell; ++c )
+        {
+            printf ("head[%d] - atom: %d, pos: (%f, %f, %f)\n", c, g_head[c],
+                    g_pos[c].x, g_pos[c].y, g_pos[c].z);
+        }
+
+    getchar ();
+
+    vec3f asdf;
+    for (int x = 0; x < g_tCell; ++x)
+        for (int y = x+1; y < g_tCell; ++y)
+            {
+                vecSub (asdf, g_pos[g_head[x]], g_pos[g_head[y]]);
+                if (vecMod (asdf) < 1.0)
+                    g_error ("X: %d, Y: %d, VecMod(X, Y): %f\n", g_head[x], g_head[y],
+                        vecMod (asdf));
+
+            }
+    getchar ();
+
+*/
+
 
     int atom = 0;
     for (int c = 0; c < g_tCell; ++c)
@@ -181,31 +220,68 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
         } 
 
 
+    for (int i = 0; i < nFluids; ++i)
+        printf (">%d pos (%f %f %f)\n", i, f_pos[i].x, f_pos[i].y, f_pos[i].z);
+
     int awef = nFluids - atom;
     while (awef)
-        for (int c = 0; c < g_tCell; ++c)
-            {
-                if (gGrid->head[c] != -1)
-                    atom = set_fluid_cell_with_particles (f_pos,
-                                                          nFluids,
-                                                          1,
-                                                          c,
-                                                          g_nCell,
-                                                          g_origin,
-                                                          g_h,
-                                                          atom,
-                                                          radius);
-                else
-                    atom = set_fluid_cell_empty (f_pos,
-                                                 nFluids,
-                                                 1,
-                                                 c,
-                                                 g_nCell,
-                                                 g_origin,
-                                                 g_h,
-                                                 atom);
-                awef--;
-            } 
+        {
+            for (int c = 0; c < g_tCell; ++c)
+                {
+                    if (gGrid->head[c] != -1)
+                        atom = set_fluid_cell_with_particles (f_pos,
+                                                              nFluids,
+                                                              1,
+                                                              c,
+                                                              g_nCell,
+                                                              g_origin,
+                                                              g_h,
+                                                              atom,
+                                                              radius);
+                    else
+                        atom = set_fluid_cell_empty (f_pos,
+                                                     nFluids,
+                                                     1,
+                                                     c,
+                                                     g_nCell,
+                                                     g_origin,
+                                                     g_h,
+                                                     atom);
+                    awef--;
+                    if (!awef)
+                        break ;
+                } 
+        }
+
+
+    for (int i = 0; i < nFluids; ++i)
+        printf (">%d pos (%f %f %f)\n", i, f_pos[i].x, f_pos[i].y, f_pos[i].z);
+
+
+    adentu_grid_cuda_set_atoms (gGrid, grain, &model->bCond);
+    adentu_grid_cuda_set_atoms (fGrid, fluid, &model->bCond);
+
+    g_message ("Differences between grains and fluids");
+    vec3f asdf;
+    for (int x = 0; x < f_tCell; ++x)
+        {
+            //g_message ("fCell: %d", x);
+            awef = f_head[x];
+            while (awef != -1)
+                {
+                    //g_message ("awef: %d", awef);
+                    for (int y = 0; y < g_tCell; ++y)
+                        {
+                            //g_message ("gGrid: %d", y);
+                            vecSub (asdf, g_pos[g_head[y]], f_pos[awef]);
+                            if (vecMod (asdf) < radius)
+                                g_error ("cellF: %d, cellG: %d G:%d F:%d\n pos[g]: %f %f %f, pos[f]: %f %f %f",
+                                x, y, y, awef, g_pos[y].x, g_pos[y].y, g_pos[y].z, 
+                                               f_pos[x].x, f_pos[x].y, f_pos[x].z);
+                        }
+                    awef = f_linked[awef];
+                }
+        }
 
 }
 
@@ -240,13 +316,19 @@ int set_fluid_cell_with_particles (vec3f *pos,
         r = sqrt (d.x*d.x + d.y*d.y + d.z*d.z);
         if (r > g_radius)
             {
+                if (atom == 32)
+                    printf ("d (%f, %f, %f), cell: %d, nCell: (%d, %d, %d)\n", 
+                            d.x, d.y, d.z, cell, nCell.x, nCell.y, nCell.z);
                 cPos.z = cell / (nCell.x * nCell.y);
                 cPos.y = (cell % (nCell.x * nCell.y)) / nCell.x;
                 cPos.x = (cell % (nCell.x * nCell.y)) % nCell.x;
-                
+
                 vecSet (aPos, cPos.x * h.x + origin.x + h.x/2 + d.x,
                               cPos.y * h.y + origin.y + h.y/2 + d.y,
                               cPos.z * h.z + origin.z + h.z/2 + d.z);
+                if (atom == 32)
+                    printf ("cPos (%d %d %d) aPos (%f %f %f)\n", 
+                            cPos.x, cPos.y, cPos.z, aPos.x, aPos.y, aPos.z);
 
                 pos[atom] = aPos;
                 ++atom;
@@ -254,6 +336,7 @@ int set_fluid_cell_with_particles (vec3f *pos,
             }
     } 
     while (count < Nfcg);
+
 
     return atom;
 }
@@ -312,6 +395,9 @@ __global__ void adentu_usr_cuda_set_grain_pos_kernel (vec3f *pos,
 
     vec3f aPos;
     vec3i cPos;
+                if (idx == 2)
+                    printf ("cell: %d, nCell: (%d, %d, %d)\n", 
+                            idx, nCell.x, nCell.y, nCell.z);
 
     cPos.z = idx / (nCell.x * nCell.y);
     cPos.y = (idx % (nCell.x * nCell.y)) / nCell.x;
@@ -320,6 +406,9 @@ __global__ void adentu_usr_cuda_set_grain_pos_kernel (vec3f *pos,
     vecSet (aPos, cPos.x * h.x + origin.x + h.x/2,
                  cPos.y * h.y + origin.y + h.y/2,
                  cPos.z * h.z + origin.z + h.z/2);
+                if (idx == 2)
+                    printf ("cPos (%d %d %d) aPos (%f %f %f)\n", 
+                    cPos.x, cPos.y, cPos.z, aPos.x, aPos.y, aPos.z);
 
     pos[idx] = aPos;
     head[idx] = idx;
