@@ -66,10 +66,20 @@ __global__ void adentu_event_ggc_cuda_get_next_kernel (AdentuEvent *ev,
 extern "C"
 AdentuEvent *adentu_event_ggc_cuda_get_next (AdentuModel *model)
 {
+    AdentuEvent *ev = (AdentuEvent *) malloc (sizeof (AdentuEvent));
+    ev->type = ADENTU_EVENT_GGC;
+    ev->time = DBL_MAX;
+    ev->owner = ev->partner = -1;
+    ev->eventData = NULL;//(int *) malloc (sizeof (int));
 
     AdentuAtom *grain = model->grain;
 
     int nGrains = grain->n;
+
+    if (nGrains <= 1)
+        return ev;
+
+
     double *g_radius = grain->radius, *d_g_radius = NULL;
 
     vec3f *g_pos = grain->pos, *d_g_pos = NULL;
@@ -145,10 +155,12 @@ AdentuEvent *adentu_event_ggc_cuda_get_next (AdentuModel *model)
     CUDA_CALL (cudaMemcpy (events, d_events, gDim.x * sizeof (AdentuEvent),
                            cudaMemcpyDeviceToHost));
 
+    /*
     AdentuEvent *ev = (AdentuEvent *) malloc (sizeof (AdentuEvent));
     ev->type = ADENTU_EVENT_GGC;
     ev->time = DBL_MAX;
     ev->owner = ev->partner = -1;
+    */
     ev->eventData = (int *) malloc (sizeof (int));
 
     for (int i = 0; i < gDim.x; ++i)

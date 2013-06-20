@@ -319,6 +319,9 @@ int set_fluid_cell_with_particles (vec3f *pos,
     vec3i cPos;
     vec3f aPos;
 
+    if (!Nfcg)
+        return atom;
+
     do
     {
         d.x = h.x * (drand48 () - 0.5);
@@ -367,6 +370,9 @@ int set_fluid_cell_empty (vec3f *pos,
     vec3f d;
     vec3i cPos;
     vec3f aPos;
+
+    if (!Nfce)
+        return atom;
 
     do
     {

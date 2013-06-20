@@ -102,8 +102,8 @@ int main (int argc, char *argv[])
     /* creating grain grid */
     AdentuGridConfig gc;
     vecSet (gc.origin, 0.0, 0.0, 0.0);
-    vecSet (gc.length, 10.1, 10.1, 10.1);
-    vecSet (gc.cells, 3, 3, 3);
+    vecSet (gc.length, 3.1, 3.1, 3.1);
+    vecSet (gc.cells, 2, 1, 1);
     gc.type = ADENTU_GRID_DEFAULT;
 
     AdentuGrid g;
@@ -136,7 +136,7 @@ int main (int argc, char *argv[])
     ac.type = ADENTU_ATOM_GRAIN;
     ac.mass.from = ac.mass.to = 1.0;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
-    ac.radii.from = ac.radii.to = 1.00000;
+    ac.radii.from = ac.radii.to = 0.500000;
     ac.radii.rangeType = ADENTU_PROP_CONSTANT;
 
     AdentuAtom a;
@@ -153,7 +153,7 @@ int main (int argc, char *argv[])
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms = 10;
+    ac.nAtoms = 1;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
@@ -252,10 +252,10 @@ int main (int argc, char *argv[])
     puts ("");
 
     adentu_event_usr_set_dt (.5);
-//    eList = adentu_event_loop (eList, handler, &m);
+//    eList = adentu_event_loop (m.eList, handler, &m);
     /* graphics (: */
     adentu_graphic_init (argc, argv, &m, &handler);//&eList, &handler);
-    //adentu_graphic_set_time_sleep (50000);
+    adentu_graphic_set_time_sleep (50000);
     glutMainLoop ();
 
 
