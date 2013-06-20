@@ -32,12 +32,14 @@
 
 /* Graphics */
 #include "adentu-graphic.h"
+#include <GLUT/glut.h>
 
 /* events */
 #include "adentu-event-mpc.h"
 #include "adentu-event-bc.h"
 #include "adentu-event-gfc.h"
 #include "adentu-event-ggc.h"
+#include "adentu-event-usr.h"
 
 
 /* usr modules */
@@ -50,8 +52,9 @@ AdentuEventHandler *handler[] = {
     [ADENTU_EVENT_MPC] = &AdentuMPCEventHandler,
     [ADENTU_EVENT_BC_GRAIN] = &AdentuBCGrainEventHandler,
     [ADENTU_EVENT_BC_FLUID] = &AdentuBCFluidEventHandler,
-    [ADENTU_EVENT_GGC] = &AdentuGGCEventHandler, /*NULL, */
-    [ADENTU_EVENT_GFC] = &AdentuGFCEventHandler,/* NULL,*/ 
+    [ADENTU_EVENT_GGC] = &AdentuGGCEventHandler, /* NULL,*/
+    [ADENTU_EVENT_GFC] = &AdentuGFCEventHandler,/* NULL,*/
+    [ADENTU_EVENT_USR] = &AdentuUSREventHandler,
     [ADENTU_EVENT_END] = NULL
 };
 
@@ -65,27 +68,27 @@ int main (int argc, char *argv[])
 
     g_message ("Initializing adentu.");
     //set seeds
-    //srand (time (NULL));
-    //srand48 (time (NULL));
-    srand (1234567);
-    srand48 (1234567);
+    srand (time (NULL));
+    srand48 (time (NULL));
+    //srand (1234567);
+    //srand48 (1234567);
     /* leer configuración */
 
 
     /* crear modelo */
     AdentuModel m;
-    vecSet (m.accel, 3.0, 2.0, 1.0);
-    m.totalTime = 10;
-    m.dT = 5;
+    vecSet (m.accel, 0.0, -1.0, 0.0);
+    m.totalTime = 50;
+    m.dT = 1;
     m.alpha = 3.141593;
-    m.gTemp = 4.0;
+    m.gTemp = 0.0;
     m.fTemp = 0.0;
-    vecSet (m.gVel, 5.0, 1.0, 3.0);
-    vecSet (m.fVel, 1.0, 1.0, 1.0);
-    vecSet (m.vcmGrain, 1., 1., 1.);
-    vecSet (m.vcmFluid, 0., 0., 0.);
-    vecSet (m.bCond, ADENTU_BOUNDARY_PBC, 
-            ADENTU_BOUNDARY_PBC, ADENTU_BOUNDARY_PBC);
+    vecSet (m.gVel, 0.0, 0.0, 0.0);
+    vecSet (m.fVel, 0.0, 0.0, 0.0);
+    vecSet (m.vcmGrain, 5., 0., 0.);
+    vecSet (m.vcmFluid, 2., 0., 0.);
+    vecSet (m.bCond, ADENTU_BOUNDARY_BBC, 
+            ADENTU_BOUNDARY_BBC, ADENTU_BOUNDARY_BBC);
     m.grain = NULL;
     m.fluid = NULL;
     m.gGrid = NULL;
@@ -99,7 +102,7 @@ int main (int argc, char *argv[])
     /* creating grain grid */
     AdentuGridConfig gc;
     vecSet (gc.origin, 0.0, 0.0, 0.0);
-    vecSet (gc.length, 3.1, 3.1, 3.1);
+    vecSet (gc.length, 10.1, 10.1, 10.1);
     vecSet (gc.cells, 3, 3, 3);
     gc.type = ADENTU_GRID_DEFAULT;
 
@@ -129,11 +132,11 @@ int main (int argc, char *argv[])
 
     /* create grains */
     AdentuAtomConfig ac;
-    ac.nAtoms = 27;
+    ac.nAtoms = 1;
     ac.type = ADENTU_ATOM_GRAIN;
-    ac.mass.from = ac.mass.to = 5.0;
+    ac.mass.from = ac.mass.to = 1.0;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
-    ac.radii.from = ac.radii.to = 0.500000;
+    ac.radii.from = ac.radii.to = 1.00000;
     ac.radii.rangeType = ADENTU_PROP_CONSTANT;
 
     AdentuAtom a;
@@ -150,11 +153,11 @@ int main (int argc, char *argv[])
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms = 64;
+    ac.nAtoms = 10;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
-    ac.radii.from = ac.radii.to = 0.00000000000000;
+    ac.radii.from = ac.radii.to = 0.00000000000001;
     ac.radii.rangeType = ADENTU_PROP_CONSTANT;
 
     AdentuAtom f;
@@ -242,19 +245,18 @@ int main (int argc, char *argv[])
     adentu_runnable_add_post_func (&m, print_post_event);
 
     /* setup event engine */
-    GSList *eList = NULL;
+    //GSList *eList = NULL;
 
     
-#ifndef ADENTU_GRAPHICS
-    eList = adentu_event_init (eList, handler, &m);
-    puts (""); 
-    /* start event engine loop */
-    eList = adentu_event_loop (eList, handler, &m);
-#elif
+    m.eList = adentu_event_init (handler, &m);
+    puts ("");
+
+    adentu_event_usr_set_dt (.5);
+//    eList = adentu_event_loop (eList, handler, &m);
     /* graphics (: */
-    adentu_graphic_init (argc, argv, &m, &eList, &handler);
-    glut_main_loop ();
-#endif /* ADENTU_GRAPHICS*/
+    adentu_graphic_init (argc, argv, &m, &handler);//&eList, &handler);
+    //adentu_graphic_set_time_sleep (50000);
+    glutMainLoop ();
 
 
 

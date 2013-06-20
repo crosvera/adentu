@@ -25,11 +25,11 @@
 #include "adentu-model.h"
 
 
-GSList *adentu_event_bc_grain_init (AdentuModel *model,
-                                    GSList *eList);
+GSList *adentu_event_bc_grain_init (AdentuModel *model);//,
+                                    //GSList *eList);
 
-GSList *adentu_event_bc_fluid_init (AdentuModel *model,
-                                    GSList *eList);
+GSList *adentu_event_bc_fluid_init (AdentuModel *model);//,
+                                    //GSList *eList);
 
 AdentuEvent *adentu_event_bc_fluid_get_next (AdentuModel *model);
 AdentuEvent *adentu_event_bc_grain_get_next (AdentuModel *model);

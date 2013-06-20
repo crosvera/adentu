@@ -124,77 +124,72 @@ __global__ void adentu_neighbourhood_cuda_cell_neighbourhood_kernel (int *neighb
     
     cellId = nCell.x * nCell.y * cell.z + nCell.x * cell.y + cell.x;
 
-    int j = 3, c, i = 0, xy = 0;
+    int c = cellId, n, xy = 0;
     int wall = walls[cellId];
     int x = nCell.x;
-    int y = x * nCell.y;
+    int y = nCell.y;
 
-    int tCell = nCell.x * nCell.y * nCell.z;
+    //int tCell = nCell.x * nCell.y * nCell.z;
 
-    while (j--)
-    {
 
-        if (wall & ~ADENTU_CELL_WALL_BOTTOM) {
-            if (wall & ~ADENTU_CELL_WALL_LEFT) {
-                c = cellId - x - 1 + xy;
-                if (c >= 0 && c < tCell)
-                    neighbours[i++] = c;
+
+        wall = walls[c];
+        n = 0;
+        for (int j = 3; j != 0; --j)
+        {
+            if (j == 3)
+                xy = 0;
+            else if (j == 2)
+            {
+                if (wall & ADENTU_CELL_WALL_BACK)
+                    continue ;
+                xy = x * y;
+            }
+            else if (j == 1)
+            {
+                if (wall & ADENTU_CELL_WALL_FRONT)
+                    continue ;
+                xy = -x * y;
             }
 
-            c = cellId - x + xy;
-            if (c >= 0 && c < tCell)
-                neighbours[i++] = c;
+
+
+            if ((wall & ADENTU_CELL_WALL_LEFT) == 0)
+                neighbours[n++] = c - 1 + xy;
+
+            neighbours[n++] = c + xy;
+
+            if ((wall & ADENTU_CELL_WALL_RIGHT) == 0)
+                neighbours[n++] = c + 1 + xy;
+
+
+
+            if ((wall & ADENTU_CELL_WALL_TOP) == 0)
+            {
+                if ((wall & ADENTU_CELL_WALL_LEFT) == 0)
+                    neighbours[n++] = c - 1 + xy + x;
+
+                neighbours[n++] = c + xy + x;
+
+                if ((wall & ADENTU_CELL_WALL_RIGHT) == 0)
+                    neighbours[n++] = c + 1 + xy + x;
+            }
+
+            if ((wall & ADENTU_CELL_WALL_BOTTOM) == 0)
+            {
+                if ((wall & ADENTU_CELL_WALL_LEFT) == 0)
+                    neighbours[n++] = c - 1 + xy - x;
+
+                neighbours[n++] = c + xy - x;
+
+                if ((wall & ADENTU_CELL_WALL_RIGHT) == 0)
+                    neighbours[n++] = c + 1 + xy - x;
+            }
+
+        }
+        for (; n < 27; ++n)
+            neighbours[n] = -1;
  
-            if (wall & ~ADENTU_CELL_WALL_RIGHT) {
-                c = cellId - x + 1 + xy;
-                if (c >= 0 && c < tCell)
-                    neighbours[i++] = c;
-            }
-        }
-        
-        if (wall & ~ADENTU_CELL_WALL_LEFT) {
-            c = cellId - 1 + xy;
-            if (c >= 0 && c < tCell)
-                neighbours[i++] = c;
-        }
-        
-            c = cellId + xy;
-            if (c >= 0 && c < tCell)
-                neighbours[i++] = c;
-         
-         if (wall & ~ADENTU_CELL_WALL_RIGHT) {
-            c = cellId + 1 + xy;
-            if (c >= 0 && c < tCell)
-                neighbours[i++] = c;
-         }
-    
-        if (wall & ~ADENTU_CELL_WALL_TOP) {
-            if (wall & ~ADENTU_CELL_WALL_LEFT) {
-                c = cellId + x - 1 + xy;
-                if (c >= 0 && c < tCell)
-                    neighbours[i++] = c;
-            }
-
-            c = cellId + x + xy;
-            if (c >= 0 && c < tCell)
-                neighbours[i++] = c;
-    
-            if (wall & ~ADENTU_CELL_WALL_RIGHT) {
-                c = cellId + x + 1 + xy;
-                if (c >= 0 && c < tCell)
-                    neighbours[i++] = c;
-            }
-        }
-
-        if (j == 2 && (wall & ~ADENTU_CELL_WALL_BACK))
-            xy = x * y;
-        else if (j == 1 && (wall & ~ADENTU_CELL_WALL_FRONT))
-            xy = x * y * -1;
-    }
-
-    for (; i < 27; ++i)
-        neighbours[i] = -1;
-
 
     //////////////////////
     neighbourhood[idx*27+0] = neighbours[0];

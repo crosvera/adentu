@@ -18,6 +18,7 @@
 */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <math.h>
 #include <glib.h>
 #include <GLUT/glut.h>
@@ -26,27 +27,30 @@
 #include "adentu-model.h"
 #include "adentu-event.h"
 #include "adentu-graphic.h"
+#include "adentu-runnable.h"
 
 
 double phi = 0.0;
 double theta = 90.0;
+useconds_t _graphic_pause = 10000;
 AdentuModel *adentu_model = NULL;
-GSList **adentu_eList = NULL;
+//GSList **adentu_eList = NULL;
 AdentuEventHandler **adentu_handler = NULL;
+int adentu_graphic_is_set = 0;
 
 
 
 void adentu_graphic_init (int argc,
                           char **argv, 
                           AdentuModel *model, 
-                          GSList **eList,
+                          //GSList **eList,
                           AdentuEventHandler **handler)
 {
     phi = 0.0;
     theta = 90.0;
 
     adentu_model = model;
-    adentu_eList = eList;
+    //adentu_eList = eList;
     adentu_handler = handler;
 
     glutInit (&argc, argv);
@@ -86,6 +90,8 @@ void adentu_graphic_init (int argc,
     glutKeyboardFunc (adentu_graphic_key);
     glutSpecialFunc (adentu_graphic_special_key);
     //glutMainLoop();
+
+    adentu_graphic_is_set = 1;
 }
 
 
@@ -96,7 +102,7 @@ void adentu_graphic_key (unsigned char key,
         {
         case 'q':
             /* exit, terminate all*/
-            g_message ("Frocing end of simulation...");
+            g_message ("Forcing end of simulation...");
             exit (0);
             break ;
 
@@ -175,10 +181,13 @@ void adentu_graphic_display (void)
     for (int i = 0; i < grain->n; ++i)
     {
         glPushMatrix ();
-        glColor3ub (140, 140, 140);
-        glTranslatef (grain->pos[i].x,// - half.x,
-                      grain->pos[i].y,// - half.y,
-                      grain->pos[i].z);// - half.z);
+        if (i%2)
+            glColor3ub (140, 140, 140);
+        else
+            glColor3ub (254, 140, 100);
+        glTranslatef (grain->pos[i].x - half.x,
+                      grain->pos[i].y - half.y,
+                      grain->pos[i].z - half.z);
         glutSolidSphere (grain->radius[i], 50, 50);
         glPopMatrix ();
     }
@@ -195,7 +204,7 @@ void adentu_graphic_display (void)
         glTranslatef (fluid->pos[i].x - half.x,
                       fluid->pos[i].y - half.y,
                       fluid->pos[i].z - half.z);
-        glutSolidSphere (length.x * 2e-3, 20, 20);
+        glutSolidSphere (0.05, 20, 20);
         glPopMatrix ();
     }
 
@@ -207,22 +216,31 @@ void adentu_graphic_event_loop (void)
 {
     AdentuEvent *event = NULL;
     AdentuEventType t;
-    
-    event = adentu_event_get_next (adentu_eList);
+  
+    /* if (adentu_model->elapsedTime == 0)
+        getchar ();
+    */
+
+    event = adentu_event_get_next (&(adentu_model->eList));
     t = event->type;
     
     if (t != ADENTU_EVENT_END)
         {
             if ((*adentu_handler[t]).event_is_valid (adentu_model, event))
                 {
+                    adentu_runnable_exec_pre_func (adentu_model, event);
                     (*adentu_handler[t]).event_attend (adentu_model, event);
-                    adentu_model->elapsedTime += (event->time - 
-                                                  adentu_model->elapsedTime);
-                    *adentu_eList = adentu_event_schedule (*adentu_eList,
+                    /*adentu_model->elapsedTime += (event->time - 
+                                                  adentu_model->elapsedTime);*/
+                    adentu_model->elapsedTime = event->time;
+                    
+                    adentu_runnable_exec_post_func (adentu_model, event);
+
+                    adentu_model->eList = adentu_event_schedule (adentu_model->eList,
                             (*adentu_handler[t]).event_get_next (adentu_model));
                 }
             else
-                *adentu_eList = adentu_event_schedule (*adentu_eList, 
+                adentu_model->eList = adentu_event_schedule (adentu_model->eList, 
                             (*adentu_handler[t]).event_get_next (adentu_model));
 
             free (event->eventData);
@@ -235,5 +253,14 @@ void adentu_graphic_event_loop (void)
             exit (0);
         }
 
+
     glutPostRedisplay();
+
+    usleep (_graphic_pause);
+}
+
+
+void adentu_graphic_set_time_sleep (useconds_t useconds)
+{
+    _graphic_pause = useconds;
 }

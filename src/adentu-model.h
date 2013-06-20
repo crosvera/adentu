@@ -58,6 +58,8 @@ typedef struct _AdentuModel {
 
     GSList *pre_event_func;
     GSList *post_event_func;
+
+    GSList *eList;
 } AdentuModel;
 
 

@@ -25,6 +25,7 @@
 #include "vec3.h"
 #include "adentu-model.h"
 
+#define correctDT(dT)   max ( max(0.999 * dT, dT - 1.0e-12), 0.0)
 
 typedef enum {
     ADENTU_EVENT_START,
@@ -33,6 +34,7 @@ typedef enum {
     ADENTU_EVENT_BC_FLUID,    // Boundary Condition
     ADENTU_EVENT_GGC,   // Grain-Grain Collision
     ADENTU_EVENT_GFC,   // Grain-Fluid Collision
+    ADENTU_EVENT_USR,   // User event
     ADENTU_EVENT_END
 } AdentuEventType;
 
@@ -49,7 +51,7 @@ typedef struct _AdentuEvent {
 
 
 typedef struct _AdentuEventHandler {
-    GSList      *(*event_init)      (AdentuModel *, GSList *);
+    GSList      *(*event_init)      (AdentuModel *);//, GSList *);
     int         (*event_is_valid)   (AdentuModel *, AdentuEvent *);
     void        (*event_attend)     (AdentuModel *, AdentuEvent *);
     AdentuEvent *(*event_get_next)  (AdentuModel *);
@@ -64,11 +66,11 @@ GSList *adentu_event_schedule (GSList *eList, AdentuEvent *event);
 int adentu_event_compare (gconstpointer a, gconstpointer b);
 
 
-GSList * adentu_event_init (GSList *eList,
+GSList * adentu_event_init (//GSList *eList,
                             AdentuEventHandler *handler[],
                             AdentuModel *model);
 
-GSList *adentu_event_loop (GSList *eList,
+GSList *adentu_event_loop (//GSList *eList,
                         AdentuEventHandler *handler[],
                         AdentuModel *model);
 

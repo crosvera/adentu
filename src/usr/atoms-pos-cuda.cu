@@ -157,11 +157,15 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     /* fluid density */
     double fRho = nFluids / Vf;
 
+    g_message ("fRho: %f", fRho);
+
     /* number of fluid particles in a cell with a grain */
     int Nfcg = floor (fRho * Vcg);
+    g_message ("Nfcg: %d", Nfcg);
     
     /* number of fluid particles in an empty cell */
     int Nfce = floor (fRho * Vce);
+    g_message ("Nfce: %d", Nfce);
 
 
 
@@ -196,6 +200,7 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
 
 
     int atom = 0;
+    if (nFluids)
     for (int c = 0; c < g_tCell; ++c)
         {
             if (gGrid->head[c] != -1)
@@ -220,9 +225,9 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
         } 
 
 
-    for (int i = 0; i < nFluids; ++i)
+/*    for (int i = 0; i < nFluids; ++i)
         printf (">%d pos (%f %f %f)\n", i, f_pos[i].x, f_pos[i].y, f_pos[i].z);
-
+*/
     int awef = nFluids - atom;
     while (awef)
         {
@@ -254,12 +259,18 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
         }
 
 
-    for (int i = 0; i < nFluids; ++i)
-        printf (">%d pos (%f %f %f)\n", i, f_pos[i].x, f_pos[i].y, f_pos[i].z);
+/*    for (int y = 0; y < g_tCell; ++y)
+        printf ("#%d g_head[y]: %d\n", y, g_head[y]);
+*/
 
 
     adentu_grid_cuda_set_atoms (gGrid, grain, &model->bCond);
     adentu_grid_cuda_set_atoms (fGrid, fluid, &model->bCond);
+
+
+/*    for (int y = 0; y < g_tCell; ++y)
+        printf ("#%d g_head[y]: %d\n", y, g_head[y]);
+*/
 
     g_message ("Differences between grains and fluids");
     vec3f asdf;
@@ -272,17 +283,18 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
                     //g_message ("awef: %d", awef);
                     for (int y = 0; y < g_tCell; ++y)
                         {
+                            if (g_head[y] == -1)
+                                continue;
                             //g_message ("gGrid: %d", y);
                             vecSub (asdf, g_pos[g_head[y]], f_pos[awef]);
                             if (vecMod (asdf) < radius)
-                                g_error ("cellF: %d, cellG: %d G:%d F:%d\n pos[g]: %f %f %f, pos[f]: %f %f %f",
-                                x, y, y, awef, g_pos[y].x, g_pos[y].y, g_pos[y].z, 
-                                               f_pos[x].x, f_pos[x].y, f_pos[x].z);
+                                g_error ("cellF: %d, cellG: %d G:%d (ghead[g]: %d) F:%d\n pos[g]: %f %f %f, pos[f]: %f %f %f",
+                                x, y, y, g_head[y], awef, g_pos[y].x, g_pos[y].y, g_pos[y].z, 
+                                               f_pos[awef].x, f_pos[awef].y, f_pos[awef].z);
                         }
                     awef = f_linked[awef];
                 }
         }
-
 }
 
 
@@ -316,7 +328,7 @@ int set_fluid_cell_with_particles (vec3f *pos,
         r = sqrt (d.x*d.x + d.y*d.y + d.z*d.z);
         if (r > g_radius)
             {
-                if (atom == 32)
+                if (atom == 1)
                     printf ("d (%f, %f, %f), cell: %d, nCell: (%d, %d, %d)\n", 
                             d.x, d.y, d.z, cell, nCell.x, nCell.y, nCell.z);
                 cPos.z = cell / (nCell.x * nCell.y);
@@ -326,7 +338,7 @@ int set_fluid_cell_with_particles (vec3f *pos,
                 vecSet (aPos, cPos.x * h.x + origin.x + h.x/2 + d.x,
                               cPos.y * h.y + origin.y + h.y/2 + d.y,
                               cPos.z * h.z + origin.z + h.z/2 + d.z);
-                if (atom == 32)
+                if (atom == 1)
                     printf ("cPos (%d %d %d) aPos (%f %f %f)\n", 
                             cPos.x, cPos.y, cPos.z, aPos.x, aPos.y, aPos.z);
 

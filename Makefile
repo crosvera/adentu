@@ -161,6 +161,8 @@ adentu-event-ggc.o: src/event/adentu-event-ggc.c
 adentu-event-ggc-cuda.o: src/event/adentu-event-ggc-cuda.cu
 	$(NVCC) $(NVCCFLAGS) $(EXTRA_NVCCFLAGS) $(GENCODE_FLAGS) $(INCLUDES) -o $@ -c $<
 
+adentu-event-usr.o: src/event/adentu-event-usr.c
+	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) $(INCLUDES) -o $@ -c $<
 
 
 adentu-runnable.o: src/adentu-runnable.c
@@ -191,7 +193,7 @@ adentu-usr-print-event-info.o: src/usr/print-event-info.c
 
 
 
-adentu: vec3.o vec3-cuda.o adentu.o adentu-grid.o adentu-atom.o  adentu-model.o adentu-atom-cuda.o adentu-grid-cuda.o adentu-neighbourhood.o adentu-neighbourhood-cuda.o adentu-event.o adentu-event-bc.o adentu-event-bc-cuda.o adentu-event-mpc.o adentu-event-mpc-cuda.o adentu-runnable.o adentu-graphic.o adentu-cuda-utils.o adentu-event-gfc-cuda.o adentu-event-gfc.o adentu-event-ggc-cuda.o adentu-event-ggc.o	adentu-usr-atoms-pos-cuda.o adentu-usr-print-event-info.o 
+adentu: vec3.o vec3-cuda.o adentu.o adentu-grid.o adentu-atom.o  adentu-model.o adentu-atom-cuda.o adentu-grid-cuda.o adentu-neighbourhood.o adentu-neighbourhood-cuda.o adentu-event.o adentu-event-bc.o adentu-event-bc-cuda.o adentu-event-mpc.o adentu-event-mpc-cuda.o adentu-runnable.o adentu-graphic.o adentu-cuda-utils.o adentu-event-gfc-cuda.o adentu-event-gfc.o adentu-event-ggc-cuda.o adentu-event-ggc.o adentu-event-usr.o    adentu-usr-atoms-pos-cuda.o adentu-usr-print-event-info.o 
 	$(GCC) $(CCFLAGS) $(EXTRA_CCFLAGS) -o $@ $+ $(LDFLAGS)  $(EXTRA_LDFLAGS)
 
 

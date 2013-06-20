@@ -58,6 +58,9 @@ void adentu_event_mpc_cuda_integrate (AdentuAtom *fluid,
     //vec3f accel = model->accel;
     //double dT = model->dT;
     int nAtoms = fluid->n;
+
+    if (nAtoms == 0)
+        return ;
     
     CUDA_CALL (cudaMalloc ((void **)&d_pos, nAtoms * sizeof (vec3f)));
     CUDA_CALL (cudaMemcpy (d_pos, pos, nAtoms * sizeof (vec3f), cudaMemcpyHostToDevice));

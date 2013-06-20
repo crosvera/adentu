@@ -58,8 +58,6 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
             print3f (atom1->vel[owner]);
             printf (" Pos: ");
             print3f (atom1->pos[owner]);
-            puts ("");
-            puts ("");
         }
     else
     if (event->type == ADENTU_EVENT_GGC ||
@@ -80,9 +78,10 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
             print3f (atom2->vel[owner]);
             printf (" Partner Pos: ");
             print3f (atom2->pos[owner]);
-            puts ("");
-            puts ("");
         }
+    
+    puts ("");
+    puts ("");
 
 }
 
@@ -109,7 +108,6 @@ void print_pre_event (AdentuModel *model, AdentuEvent *event)
             print3f (atom1->vel[owner]);
             printf (" Pos: ");
             print3f (atom1->pos[owner]);
-            puts ("");
         }
     else
     if (event->type == ADENTU_EVENT_GGC ||
@@ -130,7 +128,8 @@ void print_pre_event (AdentuModel *model, AdentuEvent *event)
             print3f (atom2->vel[owner]);
             printf (" Partner Pos: ");
             print3f (atom2->pos[owner]);
-            puts ("");
         }
+    
+    puts ("");
 
 }

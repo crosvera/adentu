@@ -155,17 +155,37 @@ __global__ void adentu_grid_cuda_filling_kernel (int *head,
     cell.x =  floor ((_pos.x - origin.x)/h.x);
     cell.y =  floor ((_pos.y - origin.y)/h.y);
     cell.z =  floor ((_pos.z - origin.z)/h.z);
-   
+
+    if (cell.x > nCell.x-1)
+            cell.x = nCell.x-1;
+    else
+    if (cell.x < 0)
+            cell.x = 0;
+
+     if (cell.y > nCell.y-1)
+            cell.y = nCell.y-1;
+    else
+    if (cell.y < 0)
+            cell.y = 0;
+
+
+    if (cell.z > nCell.z-1)
+            cell.z = nCell.z-1;
+    else
+    if (cell.z < 0)
+            cell.z = 0;
+
+
     /* 
      * if boundaries are PBC, the particles at nCell.[x,y,z]-1 
      * are associated to cell.[x,y,z] = 0. 
-     */
+     *//*
     if (bCond.x == ADENTU_BOUNDARY_PBC && cell.x == (nCell.x-1))
         cell.x = 0;
     if (bCond.y == ADENTU_BOUNDARY_PBC && cell.y == (nCell.y-1))
         cell.y = 0;
     if (bCond.z == ADENTU_BOUNDARY_PBC && cell.z == (nCell.z-1))
-        cell.z = 0;
+        cell.z = 0; */
 
     //printf ("idx: %d> %d, %d, %d\n", idx, cell.x, cell.y, cell.z);
     int c = nCell.x * nCell.y * cell.z + nCell.x * cell.y + cell.x;

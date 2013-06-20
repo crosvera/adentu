@@ -30,6 +30,8 @@
 
 #include "adentu-event-mpc-cuda.h"
 
+#include "adentu-event-ggc.h"
+#include "adentu-event-gfc.h"
 
 AdentuEventHandler AdentuMPCEventHandler = {adentu_event_mpc_init,
                                             adentu_event_mpc_is_valid,
@@ -38,13 +40,14 @@ AdentuEventHandler AdentuMPCEventHandler = {adentu_event_mpc_init,
 
 
 
-GSList *adentu_event_mpc_init (AdentuModel *model,
-                               GSList *eList)
+GSList *adentu_event_mpc_init (AdentuModel *model)//,
+                               //GSList *eList)
 {
-    eList = adentu_event_schedule (eList, adentu_event_mpc_get_next (model));
+    model->eList = adentu_event_schedule (model->eList, 
+                                adentu_event_mpc_get_next (model));
 
 
-    return eList;
+    return model->eList;
 }
 
 
@@ -82,6 +85,10 @@ void adentu_event_mpc_attend (AdentuModel *model,
                                      model->fGrid, 
                                      model->accel, dT);
 
+    adentu_event_mpc_cuda_integrate (model->grain,
+                                     model->gGrid,
+                                     model->accel, dT);
+
     adentu_grid_set_atoms (model->mpcGrid,
                            model->fluid, 
                            &model->bCond);
@@ -98,4 +105,16 @@ void adentu_event_mpc_attend (AdentuModel *model,
                 atom->vel[i].x, atom->vel[i].y, atom->vel[i].z);
         */
     }
+
+    /* get next GGC and GFC events */
+    /* model->eList = adentu_event_schedule (model->eList,
+                                        adentu_event_ggc_get_next (model));
+    */
+    
+    model->eList = adentu_event_schedule (model->eList,
+                                        adentu_event_gfc_get_next (model));
+    
+
+
+    
 }

@@ -54,9 +54,9 @@ void adentu_atom_cuda_set_init_vel (AdentuAtom *atoms, AdentuModel *model)
     vecSet (vcm, 0.0, 0.0, 0.0);
 
     if (atoms->type == ADENTU_ATOM_GRAIN)
-        velInit = (model->gTemp != 0.0) ? sqrt (3 * model->gTemp) : 1.;
+        velInit = (model->gTemp != 0.0) ? sqrt (3 * model->gTemp) : 0.0;
     else if (atoms->type == ADENTU_ATOM_FLUID)
-        velInit = (model->fTemp != 0.0) ? sqrt (3 * model->fTemp) : 1.;
+        velInit = (model->fTemp != 0.0) ? sqrt (3 * model->fTemp) : 0.0;
 
 
     CUDA_CALL (cudaMalloc ((void **)&d_vel, nAtoms * sizeof (vec3f)));

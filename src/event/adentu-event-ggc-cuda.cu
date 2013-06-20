@@ -107,7 +107,19 @@ AdentuEvent *adentu_event_ggc_cuda_get_next (AdentuModel *model)
     int *neighbours = adentu_neighbourhood_cuda_get_cell_neighbourhood (model->grain,
                                                                         model->gGrid);
 
-    
+
+   /* Testing neighbour cells */
+   /* for (int i = 0; i < nGrains; ++i)
+    {
+        printf ("atom: %d, cells: ", i);
+        for (int j=0; j < 27; ++j)
+            {
+                printf ("%d, ", neighbours[27*i + j]);
+            }
+        puts ("");
+    }
+    */
+
     dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, nGrains);
 
@@ -144,12 +156,14 @@ AdentuEvent *adentu_event_ggc_cuda_get_next (AdentuModel *model)
             if (ev->time > events[i].time)
                 {
                     ev->time = events[i].time;
+                    ev->time = correctDT (ev->time);
                     ev->owner = events[i].owner;
                     ev->partner = events[i].partner;
                     ev->nEvents = grain->nCol[ev->owner];
                     *(int *)ev->eventData = grain->nCol[ev->partner];
                 }
         }
+
 
 
     CUDA_CALL (cudaFree (d_g_pos));
@@ -163,7 +177,7 @@ AdentuEvent *adentu_event_ggc_cuda_get_next (AdentuModel *model)
     free (events);
     
 
-
+    //g_message ("GGC Event predicted at time: %f", ev->time);
 
     return ev;
 }
@@ -240,6 +254,7 @@ __global__ void adentu_event_ggc_cuda_get_next_kernel (AdentuEvent *ev,
     _cells[26] = cells[idx * 27 + 26];
 
    __syncthreads (); 
+
 
     for (int i = 0; i < 27; ++i)
         {

@@ -16,29 +16,28 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-#ifndef __ADENTU_EVENT_GGC__
-#define __ADENTU_EVENT_GGC__
+#ifndef __ADENTU_EVENT_USR_H__
+#define __ADENTU_EVENT_USR_H__
 
 #include <glib.h>
 
-#include "adentu-event.h"
 #include "adentu-model.h"
+#include "adentu-event.h"
 
+GSList *adentu_event_usr_init (AdentuModel *model);//,
+                               //GSList *eList);
 
-GSList *adentu_event_ggc_init (AdentuModel *model);//,
-                             //GSList *eList);
+AdentuEvent *adentu_event_usr_get_next (AdentuModel *model);
 
-AdentuEvent *adentu_event_ggc_get_next (AdentuModel *model);
+int adentu_event_usr_is_valid (AdentuModel *model,
+                               AdentuEvent *event);
 
-int adentu_event_ggc_is_valid (AdentuModel *model,
+void adentu_event_usr_attend (AdentuModel *model,
                               AdentuEvent *event);
 
+extern AdentuEventHandler AdentuUSREventHandler;
+extern double _adentu_event_usr_dt;
 
-void adentu_event_ggc_attend (AdentuModel *model, 
-                             AdentuEvent *event);
+void adentu_event_usr_set_dt (double dt);
 
-extern AdentuEventHandler AdentuGGCEventHandler;
-
-
-#endif /* __ADENTU_EVENT_GGC__ */
+#endif /* __ADENTU_EVENT_USR_H__ */
