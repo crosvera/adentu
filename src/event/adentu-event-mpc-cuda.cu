@@ -32,9 +32,11 @@
 #include "adentu-cuda-utils.h"
 
 extern "C" {
+    #include "adentu-event-mpc.h"
     #include "adentu-event-mpc-cuda.h"
     #include "vec3-cuda.h"
 }
+
 
 
 
@@ -52,11 +54,11 @@ void adentu_event_mpc_cuda_integrate (AdentuAtom *fluid,
                                       const vec3f accel,
                                       const double dT)
 {
+    if (!fluid)
+        return ;
 
     vec3f *d_pos, *pos = fluid->pos;
     vec3f *d_vel, *vel = fluid->vel;
-    //vec3f accel = model->accel;
-    //double dT = model->dT;
     int nAtoms = fluid->n;
 
     if (nAtoms == 0)
@@ -147,7 +149,8 @@ void adentu_event_mpc_cuda (AdentuModel *model)
     int *linked = grid->linked, *d_linked;
     int nAtoms = fluid->n;
     int tCell = grid->tCell;
-    double alpha = model->alpha;
+    //double alpha = model->alpha;
+    double alpha = _adentu_event_mpc_alpha;
 
 
     CUDA_CALL (cudaMalloc ((void **)&d_vel, nAtoms * sizeof (vec3f)));

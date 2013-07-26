@@ -26,8 +26,7 @@
 #include "adentu-model.h"
 
 
-GSList *adentu_event_ggc_init (AdentuModel *model);//,
-                             //GSList *eList);
+GSList *adentu_event_ggc_init (AdentuModel *model);
 
 AdentuEvent *adentu_event_ggc_get_next (AdentuModel *model);
 

@@ -36,7 +36,6 @@ extern double theta;
 extern useconds_t _graphic_pause;
 
 extern AdentuModel *adentu_model;
-//extern GSList **adentu_eList;
 extern AdentuEventHandler **adentu_handler;
 
 extern int adentu_graphic_is_set;
@@ -45,7 +44,6 @@ extern int adentu_graphic_is_set;
 void adentu_graphic_init (int argc,
                           char **argv,
                           AdentuModel *model, 
-                          //GSList **eList,
                           AdentuEventHandler **handler);
 
 
@@ -60,6 +58,8 @@ void adentu_graphic_reshape (int width, int height);
 void adentu_graphic_display (void);
 
 void adentu_graphic_event_loop (void);
+
+void adentu_graphic_start (void);
 
 void adentu_graphic_set_time_sleep (useconds_t useconds);
 

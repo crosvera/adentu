@@ -17,26 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __ADENTU_EVENT_GFC__
-#define __ADENTU_EVENT_GFC__
-
-#include <glib.h>
-
-#include "adentu-event.h"
-#include "adentu-model.h"
+#ifndef __ADENTU_EVENT_USR_CUDA_H__
+#define __ADENTU_EVENT_USR_CUDA_H__
 
 
-GSList *adentu_event_gfc_init (AdentuModel *model);
 
-AdentuEvent *adentu_event_gfc_get_next (AdentuModel *model);
-
-int adentu_event_gfc_is_valid (AdentuModel *model,
-                              AdentuEvent *event);
-
-void adentu_event_gfc_attend (AdentuModel *model, 
-                             AdentuEvent *event);
-
-extern AdentuEventHandler AdentuGFCEventHandler;
+AdentuEvent *adentu_event_usr_cuda_get_next (AdentuModel *model);
 
 
-#endif /* __ADENTU_EVENT_GFC__ */
+#endif /* __ADENTU_EVENT_BC_CUDA_H__ */

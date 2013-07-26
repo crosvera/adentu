@@ -30,6 +30,9 @@
 #include "vec3.h"
 
 #include "adentu-event-usr.h"
+#include "adentu-event-ggc.h"
+#include "adentu-event-usr.h"
+#include "adentu-event-usr-cuda.h"
 #include "adentu-event-mpc-cuda.h"
 
 AdentuEventHandler AdentuUSREventHandler = {adentu_event_usr_init,
@@ -40,8 +43,7 @@ AdentuEventHandler AdentuUSREventHandler = {adentu_event_usr_init,
 double _adentu_event_usr_dt = 0.5;
 
 
-GSList *adentu_event_usr_init (AdentuModel *model)//,
-                               //GSList *eList)
+GSList *adentu_event_usr_init (AdentuModel *model)
 {
     model->eList = adentu_event_schedule (model->eList,
                                    adentu_event_usr_get_next (model));
@@ -51,11 +53,18 @@ GSList *adentu_event_usr_init (AdentuModel *model)//,
 
 AdentuEvent *adentu_event_usr_get_next (AdentuModel *model)
 {
-    AdentuEvent *ev = malloc (sizeof (AdentuEvent));
+    /* AdentuEvent *ev = malloc (sizeof (AdentuEvent));
     ev->type = ADENTU_EVENT_USR;
     ev->time = model->elapsedTime + _adentu_event_usr_dt;
     ev->owner = ev->partner = -1;
     ev->eventData = NULL;
+
+    return ev;
+    */
+    AdentuEvent *ev = adentu_event_usr_cuda_get_next (model);
+    ev->time += model->elapsedTime;
+    //g_message ("Next USR event at time %f", ev->time);
+    //getchar ();
 
     return ev;
 }
@@ -87,6 +96,13 @@ void adentu_event_usr_attend (AdentuModel *model,
                                      model->accel, dT);
 
     /* DUMMY USER EVENT */
+    model->elapsedTime = event->time;
+
+    model->eList = adentu_event_schedule (model->eList,
+                                        adentu_event_ggc_get_next (model));
+    /*model->eList = adentu_event_schedule (model->eList,
+                                        adentu_event_gfc_get_next (model));
+    */
     return ;
 }
 

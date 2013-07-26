@@ -70,7 +70,7 @@ AdentuEvent *adentu_event_ggc_cuda_get_next (AdentuModel *model)
     ev->type = ADENTU_EVENT_GGC;
     ev->time = DBL_MAX;
     ev->owner = ev->partner = -1;
-    ev->eventData = NULL;//(int *) malloc (sizeof (int));
+    ev->eventData = NULL;
 
     AdentuAtom *grain = model->grain;
 
@@ -321,7 +321,7 @@ __global__ void adentu_event_ggc_cuda_get_next_kernel (AdentuEvent *ev,
     __syncthreads ();
 
     int n = 64;
-    while (tid < n && n != 1)
+    while (tid < n && n != 0)
         {
             if (_events[tid].time > _events[tid + n].time)
                 _events[tid] = _events[tid + n];
@@ -337,7 +337,7 @@ __global__ void adentu_event_ggc_cuda_get_next_kernel (AdentuEvent *ev,
 
 
 
-
+/*
 
 __global__ void adentu_event_ggc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
                                                              vec3f gpos,
@@ -391,7 +391,7 @@ __global__ void adentu_event_ggc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
     __syncthreads ();
     int n = 64;
 
-    while (n != 1 && tid < n)
+    while (n != 0 && tid < n)
     {
         if (events[tid].time    != DBL_MAX   &&
             events[tid+n].time  != DBL_MAX   &&
@@ -411,4 +411,4 @@ __global__ void adentu_event_ggc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
             ev[bid].partner = events[0].partner;
             ev[bid].time = events[0].time;
         }
-}
+} */

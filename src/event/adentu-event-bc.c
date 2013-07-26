@@ -35,6 +35,19 @@
 
 #include "adentu-event-ggc.h"
 #include "adentu-event-gfc.h"
+#include "adentu-event-usr.h"
+
+
+vec3f _gVel;
+vec3f _fVel;
+
+void adentu_event_bc_set_fbc_vel (vec3f gvel, vec3f fvel)
+{
+    _gVel = gvel;
+    _fVel = fvel;
+}
+
+
 
 AdentuEventHandler AdentuBCGrainEventHandler = {adentu_event_bc_grain_init,
                                                 adentu_event_bc_is_valid,
@@ -51,8 +64,7 @@ AdentuEventHandler AdentuBCFluidEventHandler = {adentu_event_bc_fluid_init,
 
 
 
-GSList *adentu_event_bc_grain_init (AdentuModel *model)//,
-                                    //GSList *eList)
+GSList *adentu_event_bc_grain_init (AdentuModel *model)
 {
     model->eList = adentu_event_schedule (model->eList, 
                                    adentu_event_bc_grain_get_next (model));
@@ -60,8 +72,7 @@ GSList *adentu_event_bc_grain_init (AdentuModel *model)//,
     return model->eList;
 }
 
-GSList *adentu_event_bc_fluid_init (AdentuModel *model)//,
-                                    //GSList *eList)
+GSList *adentu_event_bc_fluid_init (AdentuModel *model)
 {
     model->eList = adentu_event_schedule (model->eList, 
                                    adentu_event_bc_fluid_get_next (model));
@@ -77,7 +88,10 @@ AdentuEvent *adentu_event_bc_fluid_get_next (AdentuModel *model)
     AdentuEvent *ev = NULL;
     ev = adentu_event_bc_cuda_get_next (model, ADENTU_ATOM_FLUID);
     ev->time += model->elapsedTime;
-
+    /* testing */
+    /* g_message ("Predicted BCF event: time: %f, wall: %s, owner: %d",
+                ev->time, AdentuCellWallTypeStr[*(int *)ev->eventData], ev->owner);
+    */
     return ev;
 }
 
@@ -87,7 +101,10 @@ AdentuEvent *adentu_event_bc_grain_get_next (AdentuModel *model)
     AdentuEvent *ev = NULL;
     ev = adentu_event_bc_cuda_get_next (model, ADENTU_ATOM_GRAIN);
     ev->time += model->elapsedTime;
-
+    /* testing */
+    /* g_message ("Predicted BCG event: time: %f, wall: %s, owner: %d",
+                ev->time, AdentuCellWallTypeStr[*(int *)ev->eventData], ev->owner);
+    */
     return ev;
 }
 
@@ -139,33 +156,23 @@ void adentu_event_bc_attend (AdentuModel *model,
     //g_message ("Attending a new BC event...");
     double dT = event->time - model->elapsedTime;
 
-    if (event->type == ADENTU_EVENT_BC_GRAIN)
-        {
-            adentu_event_mpc_cuda_integrate (model->grain, 
-                                             model->gGrid, 
-                                             model->accel, dT);
-            /*adentu_grid_set_atoms (model->gGrid,
-                                   model->grain, 
-                                   model);*/
-            adentu_event_mpc_cuda_integrate (model->fluid, 
-                                             model->fGrid, 
-                                             model->accel, dT);
-        }
-
-    else if (event->type == ADENTU_EVENT_BC_FLUID)
-        {
-            adentu_event_mpc_cuda_integrate (model->fluid, 
-                                             model->fGrid, 
-                                             model->accel, dT);
-            /*adentu_grid_set_atoms (model->fGrid,
-                                   model->fluid, 
-                                   model);*/
-            adentu_event_mpc_cuda_integrate (model->grain, 
-                                             model->gGrid, 
-                                             model->accel, dT);
-        }
     //g_message ("Attending BC event, currentTime: %f atom: %d eventTime: %f", 
     //            model->elapsedTime, event->owner, event->time);
+
+
+    adentu_event_mpc_cuda_integrate (model->grain, 
+                                             model->gGrid, 
+                                             model->accel, dT);
+
+    adentu_event_mpc_cuda_integrate (model->fluid, 
+                                             model->fGrid, 
+                                             model->accel, dT);
+
+
+
+
+
+
 
     //model->elapsedTime = event->time;
     adentu_event_bc_attend2 (model, event);
@@ -181,14 +188,18 @@ void adentu_event_bc_attend (AdentuModel *model,
     */
 
     /* get next GGC and GFC events */
-    g_message ("From BC");
-    model->elapsedTime = event->time;
+    //g_message ("From BC");
+
+   /*  model->elapsedTime = event->time;
     model->eList = adentu_event_schedule (model->eList,
                                         adentu_event_ggc_get_next (model));
     
     model->eList = adentu_event_schedule (model->eList,
                                         adentu_event_gfc_get_next (model));
     
+    model->eList = adentu_event_schedule (model->eList,
+                                        adentu_event_usr_get_next (model));
+    */
                             
 
 }
@@ -216,7 +227,8 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             atom = model->grain;
             grid = model->gGrid;
             temp = model->gTemp;
-            aVel = model->gVel;
+            //aVel = model->gVel;
+            aVel = _gVel;
 
         } 
     else if (event->type == ADENTU_EVENT_BC_FLUID)
@@ -225,7 +237,8 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             atom = model->fluid;
             grid = model->fGrid;
             temp = model->fTemp;
-            aVel = model->fVel;
+            //aVel = model->fVel;
+            aVel = _fVel;
         }
 
 

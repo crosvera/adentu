@@ -21,6 +21,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <glib.h>
+#include <execinfo.h>
 
 #include "adentu-atom.h"
 #include "adentu-model.h"
@@ -33,6 +34,7 @@
 #include "adentu-event-mpc-cuda.h"
 
 #include "adentu-event-bc.h"
+#include "adentu-event-usr.h"
 
 #include "adentu-graphic.h"
 
@@ -44,8 +46,7 @@ AdentuEventHandler AdentuGGCEventHandler = {adentu_event_ggc_init,
 
 
 
-GSList *adentu_event_ggc_init (AdentuModel *model)//,
-                               //GSList *eList)
+GSList *adentu_event_ggc_init (AdentuModel *model)
 {
     model->eList = adentu_event_schedule (model->eList, 
                             adentu_event_ggc_get_next (model));
@@ -64,9 +65,20 @@ AdentuEvent *adentu_event_ggc_get_next (AdentuModel *model)
     AdentuEvent *ev = adentu_event_ggc_cuda_get_next (model);
     ev->time += model->elapsedTime;
 
-    /*g_message ("New GGC event, time: %f", ev->time);
-    getchar ();
-*/
+    /* testing */
+    //g_message ("New GGC event, time: %f", ev->time);
+    /* testing, get the backtrace of caller functions */
+#ifdef Debug
+    void *buffer[100];
+    char **strings;
+    int nptrs = backtrace (buffer, 100);
+    strings = backtrace_symbols (buffer, nptrs);
+    for (int i = 0; i < 3; ++i)
+        g_message ("%s", strings[i]);
+    free (strings);
+#endif 
+    //getchar ();
+
     return ev;
 }
 
@@ -137,8 +149,8 @@ void adentu_event_ggc_attend (AdentuModel *model,
     vecAdd (pAntes, p1, p2);
 
     double e1, e2, diffe, eBefore;
-    e1 = gmass * vecMod (gvel[0]);
-    e2 = fmass * vecMod (fvel[0]);
+    e1 = gmass * vecDot (gvel[0], gvel[0]);
+    e2 = fmass * vecDot (fvel[0], fvel[0]);
     eBefore = e1 + e2;
 
 
@@ -156,7 +168,7 @@ void adentu_event_ggc_attend (AdentuModel *model,
         }
 
     vec3f n;
-    vecScale (n, pos, pu);
+    vecScale (n, pos, (1/pu));
    
     g_message ("radius: %f, pu: %f, pu-radius: %.9f\npos: (%f, %f, %f), n: (%f, %f, %f), vecDot (n, n) = %f", 
                 radius, pu, pu-radius, pos.x, pos.y, pos.z, n.x, n.y, n.z, vecDot (n, n));
@@ -194,8 +206,8 @@ void adentu_event_ggc_attend (AdentuModel *model,
     vecSub (diffp, pDespues, pAntes);
 
     double e1p, e2p, eAfter;
-    e1p = gmass * vecMod (gvel[0]);
-    e2p = fmass * vecMod (fvel[0]);
+    e1p = gmass * vecDot (gvel[0], gvel[0]);
+    e2p = fmass * vecDot (fvel[0], fvel[0]);
     eAfter = e1p + e2p;
     diffe = eAfter - eBefore;
     
@@ -205,14 +217,15 @@ void adentu_event_ggc_attend (AdentuModel *model,
 
 
     /* check next BC event */
-    model->elapsedTime = event->time;
+    /* model->elapsedTime = event->time;
     model->eList = adentu_event_schedule (model->eList,
                                     adentu_event_bc_grain_get_next (model));
     
-    /* model->eList = adentu_event_schedule (model->eList,
+     model->eList = adentu_event_schedule (model->eList,
                                     adentu_event_bc_fluid_get_next (model));
+    model->eList = adentu_event_schedule (model->eList,
+                                    adentu_event_usr_get_next (model));
     */
-
 }
 
 

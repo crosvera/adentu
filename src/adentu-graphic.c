@@ -21,6 +21,7 @@
 #include <unistd.h>
 #include <math.h>
 #include <glib.h>
+#include <string.h>
 #include <GLUT/glut.h>
 
 #include "vec3.h"
@@ -34,7 +35,6 @@ double phi = 0.0;
 double theta = 90.0;
 useconds_t _graphic_pause = 10000;
 AdentuModel *adentu_model = NULL;
-//GSList **adentu_eList = NULL;
 AdentuEventHandler **adentu_handler = NULL;
 int adentu_graphic_is_set = 0;
 
@@ -43,14 +43,12 @@ int adentu_graphic_is_set = 0;
 void adentu_graphic_init (int argc,
                           char **argv, 
                           AdentuModel *model, 
-                          //GSList **eList,
                           AdentuEventHandler **handler)
 {
     phi = 0.0;
     theta = 90.0;
 
     adentu_model = model;
-    //adentu_eList = eList;
     adentu_handler = handler;
 
     glutInit (&argc, argv);
@@ -58,7 +56,6 @@ void adentu_graphic_init (int argc,
     glutInitWindowPosition (10,10);
     glutInitWindowSize (1024, 768);
     glutCreateWindow("Adentu Simulation v0.1");
-    //init();
 
     glClearColor(0.0, 0.0, 0.0, 1.0); // Black Background
 
@@ -167,6 +164,7 @@ void adentu_graphic_display (void)
     
     glClear (GL_COLOR_BUFFER_BIT);
 
+
     //camera
     glLoadIdentity ();
     gluLookAt (half.x * 5 * sin (M_PI*theta / 180.0) * sin (M_PI*phi / 180.0),
@@ -204,9 +202,14 @@ void adentu_graphic_display (void)
         glTranslatef (fluid->pos[i].x - half.x,
                       fluid->pos[i].y - half.y,
                       fluid->pos[i].z - half.z);
-        glutSolidSphere (0.05, 20, 20);
+        glutSolidSphere (0.01, 20, 20);
         glPopMatrix ();
     }
+
+
+
+
+
 
     glutSwapBuffers ();
 }
@@ -223,25 +226,42 @@ void adentu_graphic_event_loop (void)
 
     event = adentu_event_get_next (&(adentu_model->eList));
     t = event->type;
+    /* testing */
+    /* g_message ("%s: Next event to attend: %s, time: %f", __FILE__, 
+                AdentuEventTypeStr[t], event->time);
+    */
+
     
     if (t != ADENTU_EVENT_END)
         {
+            if ((adentu_handler[t]) == NULL)
+                {
+                    free (event->eventData);
+                    free (event);
+                }
+            else
             if ((*adentu_handler[t]).event_is_valid (adentu_model, event))
                 {
                     adentu_runnable_exec_pre_func (adentu_model, event);
                     (*adentu_handler[t]).event_attend (adentu_model, event);
-                    /*adentu_model->elapsedTime += (event->time - 
-                                                  adentu_model->elapsedTime);*/
+
                     adentu_model->elapsedTime = event->time;
                     
                     adentu_runnable_exec_post_func (adentu_model, event);
 
-                    adentu_model->eList = adentu_event_schedule (adentu_model->eList,
+                    /* adentu_model->eList = adentu_event_schedule (adentu_model->eList,
                             (*adentu_handler[t]).event_get_next (adentu_model));
+                    */
                 }
-            else
-                adentu_model->eList = adentu_event_schedule (adentu_model->eList, 
-                            (*adentu_handler[t]).event_get_next (adentu_model));
+
+            /* predict new events */
+            for (int i = ADENTU_EVENT_START; i != ADENTU_EVENT_END; ++i)
+                {
+                    if (adentu_handler[i] != NULL)
+                        adentu_model->eList = adentu_event_schedule (adentu_model->eList,
+                                       (*adentu_handler[i]).event_get_next (adentu_model));
+                }
+
 
             free (event->eventData);
             free (event);
@@ -259,8 +279,13 @@ void adentu_graphic_event_loop (void)
     usleep (_graphic_pause);
 }
 
+void adentu_graphic_start (void)
+{
+    glutMainLoop ();
+}
 
 void adentu_graphic_set_time_sleep (useconds_t useconds)
 {
     _graphic_pause = useconds;
 }
+

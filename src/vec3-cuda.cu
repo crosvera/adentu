@@ -49,7 +49,8 @@ void vRand3f_cuda (vec3f *d_v, int n)
     dim3 bDim;
     adentu_cuda_set_grid (&gDim, &bDim, n);
 
-    set_seed<<<gDim, bDim>>> (d_states, time (NULL), n);
+    //set_seed<<<gDim, bDim>>> (d_states, time (NULL), n);
+    set_seed<<<gDim, bDim>>> (d_states, 1234567, n);
     vRand3f_cuda_generate<<<gDim, bDim>>> (d_v, d_states, n);
 
     CUDA_CALL (cudaFree (d_states));

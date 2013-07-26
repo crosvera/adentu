@@ -33,6 +33,23 @@
 #include "adentu-event-ggc.h"
 #include "adentu-event-gfc.h"
 
+
+double _adentu_event_mpc_dt = 0.0;
+double _adentu_event_mpc_alpha = 3.141592653589793238462;
+
+
+void adentu_event_mpc_set_dt (double dt)
+{
+    _adentu_event_mpc_dt = dt;
+}
+
+void adentu_event_mpc_set_alpha (double alpha)
+{
+    _adentu_event_mpc_alpha = alpha;
+}
+
+
+
 AdentuEventHandler AdentuMPCEventHandler = {adentu_event_mpc_init,
                                             adentu_event_mpc_is_valid,
                                             adentu_event_mpc_attend,
@@ -40,8 +57,7 @@ AdentuEventHandler AdentuMPCEventHandler = {adentu_event_mpc_init,
 
 
 
-GSList *adentu_event_mpc_init (AdentuModel *model)//,
-                               //GSList *eList)
+GSList *adentu_event_mpc_init (AdentuModel *model)
 {
     model->eList = adentu_event_schedule (model->eList, 
                                 adentu_event_mpc_get_next (model));
@@ -55,7 +71,8 @@ AdentuEvent *adentu_event_mpc_get_next (AdentuModel *model)
 {
     AdentuEvent *event = malloc (sizeof (AdentuEvent));
     event->type = ADENTU_EVENT_MPC;
-    event->time = model->elapsedTime + model->dT;
+    //event->time = model->elapsedTime + model->dT;
+    event->time = model->elapsedTime + _adentu_event_mpc_dt;
     event->owner = -1;
     event->partner = -1;
     event->eventData = NULL;
@@ -107,9 +124,9 @@ void adentu_event_mpc_attend (AdentuModel *model,
     }
 
     /* get next GGC and GFC events */
-    /* model->eList = adentu_event_schedule (model->eList,
+    model->eList = adentu_event_schedule (model->eList,
                                         adentu_event_ggc_get_next (model));
-    */
+    
     
     model->eList = adentu_event_schedule (model->eList,
                                         adentu_event_gfc_get_next (model));

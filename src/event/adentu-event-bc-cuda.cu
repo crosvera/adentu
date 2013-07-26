@@ -136,6 +136,7 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
     free (times);
     free (walls);
 
+
     return e;
 
 }

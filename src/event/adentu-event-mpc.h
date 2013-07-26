@@ -25,9 +25,13 @@
 #include "adentu-model.h"
 #include "adentu-event.h"
 
+extern double _adentu_event_mpc_dt;
+extern double _adentu_event_mpc_alpha;
 
-GSList *adentu_event_mpc_init (AdentuModel *model);//,
-                               //GSList *eList);
+void adentu_event_mpc_set_dt (double dt);
+void adentu_event_mpc_set_alpha (double alpha);
+
+GSList *adentu_event_mpc_init (AdentuModel *model);
 
 
 AdentuEvent *adentu_event_mpc_get_next (AdentuModel *model);

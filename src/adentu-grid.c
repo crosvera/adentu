@@ -23,6 +23,15 @@
 #include "adentu-grid.h"
 #include "adentu-grid-cuda.h"
 
+const char *AdentuCellWallTypeStr[] = {
+    [ADENTU_CELL_WALL_NO] = "NO WALL",
+    [ADENTU_CELL_WALL_LEFT] = "LEFT WALL",
+    [ADENTU_CELL_WALL_RIGHT] = "RIGHT WALL",
+    [ADENTU_CELL_WALL_TOP] = "TOP WALL",
+    [ADENTU_CELL_WALL_BOTTOM] = "BOTTOM WALL",
+    [ADENTU_CELL_WALL_FRONT] = "FRONT WALL",
+    [ADENTU_CELL_WALL_BACK] = "BACK WALL"
+};
 
 
 const char *AdentuBoundaryTypeStr[] = {

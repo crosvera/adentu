@@ -79,8 +79,7 @@ int adentu_event_compare (gconstpointer a, gconstpointer b)
 
 
 
-GSList * adentu_event_init (//GSList *eList,
-                            AdentuEventHandler *handler[],
+GSList * adentu_event_init (AdentuEventHandler *handler[],
                             AdentuModel *model)
 {
     g_message ("Setting elapsedTime=0");
@@ -96,7 +95,7 @@ GSList * adentu_event_init (//GSList *eList,
     for (int i = ADENTU_EVENT_START; i != ADENTU_EVENT_END; ++i)
         {
             if (handler[i] != NULL)
-                model->eList = (*handler[i]).event_init (model);//, eList);
+                model->eList = (*handler[i]).event_init (model);
         }
 
     return model->eList;
@@ -104,9 +103,8 @@ GSList * adentu_event_init (//GSList *eList,
 
 
 
-GSList *adentu_event_loop (//GSList *eList,
-                        AdentuEventHandler *handler[],
-                        AdentuModel *model)
+GSList *adentu_event_loop (AdentuEventHandler *handler[],
+                           AdentuModel *model)
 {
     g_message ("Starting Adentu Simulation Loop...");
     AdentuEvent *ev = NULL;
@@ -116,9 +114,20 @@ GSList *adentu_event_loop (//GSList *eList,
     while (ev->type != ADENTU_EVENT_END)
     {
         t = ev->type;
-
+        
+        /* testing */
+        /* g_message ("%s: Next event to attend: %s, time: %f", __FILE__, 
+                    AdentuEventTypeStr[t], event->time);
+        */
+        if ((handler[t]) == NULL)
+            {
+                free (ev->eventData);
+                free (ev);
+            }
+        else
         if ((*handler[t]).event_is_valid (model, ev))
             {
+
                 adentu_runnable_exec_pre_func (model, ev);
                 (*handler[t]).event_attend (model, ev);
 
@@ -126,14 +135,19 @@ GSList *adentu_event_loop (//GSList *eList,
                 
                 adentu_runnable_exec_post_func (model, ev);
 
-                model->eList = adentu_event_schedule (model->eList,
+                /* model->eList = adentu_event_schedule (model->eList,
                                     (*handler[t]).event_get_next (model));
+                */
             }
-        else
-            {
-                model->eList = adentu_event_schedule (model->eList,
-                                            (*handler[t]).event_get_next (model));
-            }
+
+            /* predict new events */
+            for (int i = ADENTU_EVENT_START; i != ADENTU_EVENT_END; ++i)
+                {
+                    if (handler[i] != NULL)
+                        model->eList = adentu_event_schedule (model->eList,
+                                       (*handler[i]).event_get_next (model));
+                }
+
 
         free (ev->eventData);
         free (ev);

@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
 
 #include "adentu-model.h"
@@ -32,7 +33,6 @@
 
 /* Graphics */
 #include "adentu-graphic.h"
-#include <GLUT/glut.h>
 
 /* events */
 #include "adentu-event-mpc.h"
@@ -49,11 +49,11 @@
 
 AdentuEventHandler *handler[] = {
     [ADENTU_EVENT_START] = NULL,
-    [ADENTU_EVENT_MPC] = &AdentuMPCEventHandler,
+    [ADENTU_EVENT_MPC] = NULL, //&AdentuMPCEventHandler,
     [ADENTU_EVENT_BC_GRAIN] = &AdentuBCGrainEventHandler,
     [ADENTU_EVENT_BC_FLUID] = &AdentuBCFluidEventHandler,
     [ADENTU_EVENT_GGC] = &AdentuGGCEventHandler, /* NULL,*/
-    [ADENTU_EVENT_GFC] = &AdentuGFCEventHandler,/* NULL,*/
+    [ADENTU_EVENT_GFC] = NULL, //&AdentuGFCEventHandler,/* NULL,*/
     [ADENTU_EVENT_USR] = &AdentuUSREventHandler,
     [ADENTU_EVENT_END] = NULL
 };
@@ -68,23 +68,19 @@ int main (int argc, char *argv[])
 
     g_message ("Initializing adentu.");
     //set seeds
-    srand (time (NULL));
-    srand48 (time (NULL));
-    //srand (1234567);
-    //srand48 (1234567);
+    //srand (time (NULL));
+    //srand48 (time (NULL));
+    srand (1234567);
+    srand48 (1234567);
     /* leer configuración */
 
 
     /* crear modelo */
     AdentuModel m;
-    vecSet (m.accel, 0.0, -1.0, 0.0);
+    vecSet (m.accel, 0.0, 0.0, 0.0);
     m.totalTime = 50;
-    m.dT = 1;
-    m.alpha = 3.141593;
-    m.gTemp = 0.0;
+    m.gTemp = 1.0;
     m.fTemp = 0.0;
-    vecSet (m.gVel, 0.0, 0.0, 0.0);
-    vecSet (m.fVel, 0.0, 0.0, 0.0);
     vecSet (m.vcmGrain, 5., 0., 0.);
     vecSet (m.vcmFluid, 2., 0., 0.);
     vecSet (m.bCond, ADENTU_BOUNDARY_BBC, 
@@ -97,13 +93,27 @@ int main (int argc, char *argv[])
     m.pre_event_func = NULL;
     m.post_event_func = NULL;
 
-    
+
+    /* if using ADENTU_BOUNDARY_FBC as BC, 
+     * set the grain and fluid velocity */
+    vec3f gvel, fvel;
+    vecSet (gvel, 0.0, 0.0, 0.0);
+    vecSet (fvel, 0.0, 0.0, 0.0);
+    adentu_event_bc_set_fbc_vel (gvel, fvel);
+   
+
+    /* if using MPC events, set the interval time
+     * which it will generate events. Also set the
+     * rotation angle.*/
+    adentu_event_mpc_set_dt (0.001);
+    adentu_event_mpc_set_alpha (3.141592653589793238462);
+
     
     /* creating grain grid */
     AdentuGridConfig gc;
     vecSet (gc.origin, 0.0, 0.0, 0.0);
     vecSet (gc.length, 3.1, 3.1, 3.1);
-    vecSet (gc.cells, 2, 1, 1);
+    vecSet (gc.cells, 3, 3, 3);
     gc.type = ADENTU_GRID_DEFAULT;
 
     AdentuGrid g;
@@ -132,7 +142,7 @@ int main (int argc, char *argv[])
 
     /* create grains */
     AdentuAtomConfig ac;
-    ac.nAtoms = 1;
+    ac.nAtoms = 2;
     ac.type = ADENTU_ATOM_GRAIN;
     ac.mass.from = ac.mass.to = 1.0;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
@@ -153,7 +163,7 @@ int main (int argc, char *argv[])
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms = 1;
+    ac.nAtoms =  2540;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
@@ -172,6 +182,14 @@ int main (int argc, char *argv[])
     adentu_usr_cuda_set_atoms_pos (&m);
 
 
+    /* oink test */
+    vecSet (m.grain->pos[0], 1.5500, 2.3500, 1.5500);
+    vecSet (m.grain->vel[0], 0, -1, 0);
+    vecSet (m.grain->pos[1], 1.5500, 1.2500, 1.5500);
+    vecSet (m.grain->vel[1], 0, 1, 0);
+
+
+
     /* General debug Info */
     vec3f half, center;
     vecScale (half, m.gGrid->length , 0.5);
@@ -187,76 +205,46 @@ int main (int argc, char *argv[])
     print_vec3f (&half);
     printf ("gGrid Center: ");
     print_vec3f (&center);
-/*
-    vecScale (half, m.fGrid->length , 0.5);
-    center.x = m.fGrid->origin.x + half.x;
-    center.y = m.fGrid->origin.y + half.y;
-    center.z = m.fGrid->origin.z + half.z;
-               
-    printf ("fGrid Origin: ");
-    print_vec3f (&m.fGrid->origin);
-    printf ("fGrid Length: ");
-    print_vec3f (&m.fGrid->length);
-    printf ("fGrid Half:   ");
-    print_vec3f (&half);
-    printf ("fGrid Center: ");
-    print_vec3f (&center);
 
-    vecScale (half, m.mpcGrid->length , 0.5);
-    center.x = m.mpcGrid->origin.x + half.x;
-    center.y = m.mpcGrid->origin.y + half.y;
-    center.z = m.mpcGrid->origin.z + half.z;
-               
-    printf ("mpcGrid Origin: ");
-    print_vec3f (&m.mpcGrid->origin);
-    printf ("mpcGrid Length: ");
-    print_vec3f (&m.mpcGrid->length);
-    printf ("mpcGrid Half:   ");
-    print_vec3f (&half);
-    printf ("mpcGrid Center: ");
-    print_vec3f (&center);
-
-*/
 
 
 
 
     printf ("Acceleration: ");
     print_vec3f (&m.accel);
-    printf ("gVel: ");
-    print_vec3f (&m.gVel);
     printf ("Boundary Conditions: ");
     printf ("(%s, %s, %s)\n", AdentuBoundaryTypeStr[m.bCond.x], 
                               AdentuBoundaryTypeStr[m.bCond.y], 
                               AdentuBoundaryTypeStr[m.bCond.z]);
 
 
-   /* printf ("Created %d grains, mass: %f, radii: %f\n", m.grain->n, 
-            m.grain->mass[0], m.grain->radius[0]);
-    for (int i = 0, j = m.grain->n; i < j; ++i)
-        printf ("%3d    %f, %f, %f    %f, %f, %f\n", i,
-                m.grain->pos[i].x, m.grain->pos[i].y, m.grain->pos[i].z, 
-                m.grain->vel[i].x, m.grain->vel[i].y, m.grain->vel[i].z);
-*/
 
 
-    adentu_runnable_add_pre_func (&m, print_pre_event);
-    //adentu_runnable_add_post_func (&m, print_event);
-    adentu_runnable_add_post_func (&m, print_post_event);
+    //adentu_runnable_add_pre_func (&m, print_pre_event);
+    adentu_runnable_add_post_func (&m, print_event);
+    //adentu_runnable_add_post_func (&m, print_post_event);
 
     /* setup event engine */
-    //GSList *eList = NULL;
-
-    
     m.eList = adentu_event_init (handler, &m);
     puts ("");
 
-    adentu_event_usr_set_dt (.5);
-//    eList = adentu_event_loop (m.eList, handler, &m);
+
+
+    /* run in graphic mode or text mode */
+    if (argc == 2 && !strncmp (argv[1], "-g", 2))
+        {
+            adentu_graphic_init (argc, argv, &m, &handler);
+            adentu_graphic_set_time_sleep (0000);
+            adentu_graphic_start ();
+        }
+    else
+        m.eList = adentu_event_loop (handler, &m);
+
+
+    //adentu_event_usr_set_dt (.5);
+    //m.eList = adentu_event_loop (handler, &m);
     /* graphics (: */
-    adentu_graphic_init (argc, argv, &m, &handler);//&eList, &handler);
-    adentu_graphic_set_time_sleep (50000);
-    glutMainLoop ();
+    
 
 
 

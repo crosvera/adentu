@@ -49,6 +49,8 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
     if (event->type == ADENTU_EVENT_BC_GRAIN ||
         event->type == ADENTU_EVENT_BC_FLUID)
         {
+            puts ("");
+            return ;
             printf ("Owner: %d \n", owner);
             if (event->type == ADENTU_EVENT_BC_GRAIN)
                 atom1 = model->grain;

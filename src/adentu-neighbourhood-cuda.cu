@@ -63,6 +63,7 @@ int *adentu_neighbourhood_cuda_get_cell_neighbourhood (AdentuAtom *atoms,
     int *d_wall, *wall = grid->cells.wall;
     vec3f *d_pos, *pos = atoms->pos;
     int nAtoms = atoms->n;
+    //printf ("nAtoms: %d, tCell: %d\n", nAtoms, tCell);
 
     CUDA_CALL (cudaMalloc ((void **)&d_wall, tCell * sizeof (int)));
     CUDA_CALL (cudaMemcpy (d_wall, wall, tCell * sizeof (int),

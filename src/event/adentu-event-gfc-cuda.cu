@@ -81,7 +81,7 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
 
     int nGrains = grain->n;
     int nFluids = fluid->n;
-    if (nGrains <= 1 || nFluids <= 1)
+    if (!(nFluids && nGrains))
         return ev;
 
     double *g_radius = grain->radius, *d_g_radius = NULL;
@@ -139,6 +139,16 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
 
     int *neighbours = adentu_neighbourhood_cuda_get_cell_neighbourhood (model->grain,
                                                                         model->gGrid);
+    /*
+    for (int i=0; i < nGrains; ++i)
+    {
+        printf ("cell %d, neighbours: ", i);
+        for (int j=0; j < 27; ++j)
+            printf (" %d,", neighbours[j + i*27]);
+        puts ("");
+    }
+    printf ("tCell: %d\n", tCell);
+    */
 
     
     dim3 gDim, bDim;
@@ -289,6 +299,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
             if (c == -1)
                 continue ;
             a = head[c];
+            //printf ("%d>i: %d, c: %d, a: %d\n", idx, i, c, a);
             while (a != -1)
                 {
                     _fpos = fpos[a];
@@ -322,7 +333,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
                                 //    printf ("idx:%d, a:%d> negative time! = %f\n", idx, a, time);
                             }
                     }
-
+                    //printf ("a = linked[a] = %d\n", linked[a]);
                     a = linked[a];
                 }
         }
@@ -331,7 +342,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
     __syncthreads ();
 
     int n = 64;
-    while (tid < n && n != 1)
+    while (tid < n && n != 0)
         {
             if (_events[tid].time > _events[tid + n].time)
                 _events[tid] = _events[tid + n];
@@ -346,7 +357,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
 }
 
 
-
+/*
 
 
 __global__ void adentu_event_gfc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
@@ -401,7 +412,7 @@ __global__ void adentu_event_gfc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
     __syncthreads ();
     int n = 64;
 
-    while (n != 1 && tid < n)
+    while (n != 0 && tid < n)
     {
         if (events[tid].time    != DBL_MAX   &&
             events[tid+n].time  != DBL_MAX   &&
@@ -421,4 +432,4 @@ __global__ void adentu_event_gfc_cuda_grain_vs_fluid_kernel (AdentuEvent *ev,
             ev[bid].partner = events[0].partner;
             ev[bid].time = events[0].time;
         }
-}
+} */

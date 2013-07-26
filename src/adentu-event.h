@@ -51,7 +51,7 @@ typedef struct _AdentuEvent {
 
 
 typedef struct _AdentuEventHandler {
-    GSList      *(*event_init)      (AdentuModel *);//, GSList *);
+    GSList      *(*event_init)      (AdentuModel *);
     int         (*event_is_valid)   (AdentuModel *, AdentuEvent *);
     void        (*event_attend)     (AdentuModel *, AdentuEvent *);
     AdentuEvent *(*event_get_next)  (AdentuModel *);

@@ -21,15 +21,18 @@
 
 #include <glib.h>
 
+#include "vec3.h"
 #include "adentu-event.h"
 #include "adentu-model.h"
 
+extern vec3f _gVel;
+extern vec3f _fVel;
 
-GSList *adentu_event_bc_grain_init (AdentuModel *model);//,
-                                    //GSList *eList);
+void adentu_event_bc_set_fbc_vel (vec3f gvel, vec3f fvel);
 
-GSList *adentu_event_bc_fluid_init (AdentuModel *model);//,
-                                    //GSList *eList);
+GSList *adentu_event_bc_grain_init (AdentuModel *model);
+
+GSList *adentu_event_bc_fluid_init (AdentuModel *model);
 
 AdentuEvent *adentu_event_bc_fluid_get_next (AdentuModel *model);
 AdentuEvent *adentu_event_bc_grain_get_next (AdentuModel *model);

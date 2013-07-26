@@ -37,6 +37,7 @@ typedef enum {
     ADENTU_CELL_WALL_BACK   = 32
 } AdentuCellWallType;
 
+extern const char *AdentuCellWallTypeStr[];
 
 /*
 #define NO_WALL     0
