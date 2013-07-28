@@ -23,7 +23,7 @@
 #include "adentu-atom.h"
 #include "adentu-model.h"
 #include "adentu-grid.h"
-#include "vec3.h"
+#include "adentu.h"
 
 #include "adentu-atom-cuda.h"
 

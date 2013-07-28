@@ -27,13 +27,137 @@
 #include "adentu-atom.h"
 #include "adentu-model.h"
 #include "adentu-grid.h"
-#include "vec3.h"
+#include "adentu.h"
 #include "adentu-cuda-utils.h"
 
 extern "C" {
-    #include "vec3-cuda.h"
+    #include "vec-cuda.h"
     #include "adentu-atom-cuda.h"
 }
+
+
+extern "C"
+adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
+{
+    AdentuAtomType type = conf->type;
+    int nAtoms = conf->nAtoms;
+    AdentuPropRange pmass = conf->mass;
+    AdentuPropRange pradii = conf->radii;
+
+    unsigned int memsize = nAtoms * 4;
+
+    /* allocating host side */
+    double *h_pos = malloc (memsize * sizeof (double));
+    double *h_vel = malloc (memsize * sizeof (double));
+
+    if (type == ADENTU_ATOM_FLUID)
+        double *h_velRel = malloc (memsize * sizeof (double));
+    else
+        double *h_velRel = NULL;
+
+    int *h_nCol = malloc (nAtoms * sizeof (int));
+    memset (h_nCol, 0, nAtoms * sizeof (int));
+    
+    double *h_mass = malloc (nAtoms * sizeof (double));
+    double *h_radius = malloc (nAtoms * sizeof (double));
+
+    /* allocating device side */
+    double *d_pos = malloc (memsize * sizeof (double));
+    CUDA_CALL (cudaMalloc ((void **)&d_pos, memsize * sizeof (double)));
+    double *d_vel = malloc (memsize * sizeof (double));
+    CUDA_CALL (cudaMalloc ((void **)&d_vel, memsize * sizeof (double)));
+
+    double *d_velRel = NULL;
+    if (type == ADENTU_ATOM_FLUID)
+        CUDA_CALL (cudaMalloc ((void **)&d_velRel, memsize * sizeof (double)));
+
+    int *d_nCol;
+    CUDA_CALL (cudaMalloc ((void **)&d_nCol, nAtoms * sizeof (int)));
+    CUDA_CALL (cudaMemset (d_nCol, 0, nAtoms * sizeof (int)));
+    
+    double *d_mass;
+    CUDA_CALL (cudaMalloc ((void **)&d_mass, nAtoms * sizeof (double)));
+    double *d_radius;
+    CUDA_CALL (cudaMalloc ((void **)&d_radius, nAtoms * sizeof (double)));
+
+
+
+
+
+    for (int i = 0; i < nAtoms; ++i)
+    {
+        //lastTime[i] = 0;
+        array4_set3v (h_pos, i, 0.0, 0.0, 0.0);
+        array4_set3v (h_vel, i, 0.0, 0.0, 0.0);
+
+        switch (pmass.rangeType) {
+            case ADENTU_PROP_CONSTANT:
+                h_mass[i] = pmass.from;
+                break;
+
+            case ADENTU_PROP_NORMAL:
+                h_mass[i] = (double) rand() / (RAND_MAX + 1.0) * (pmass.to - pmass.from) + pmass.from;
+                break;
+
+            case ADENTU_PROP_DELTA:
+                /**
+                 * \todo Implement DELTA values in mass properties
+                 */
+                break;
+
+            default:
+                g_error ("Wrong Property Type\n");
+                break;
+        }
+
+        switch (pradii.rangeType) {
+            case ADENTU_PROP_CONSTANT:
+                radius[i] = pradii.from;
+                break;
+
+            case ADENTU_PROP_NORMAL:
+                radius[i] = (double) rand() / (RAND_MAX + 1.0) * (pradii.to - pradii.from) + pradii.from;
+                break;
+
+            case ADENTU_PROP_DELTA:
+                /**
+                 * \todo Implement DELTA values in radius properties
+                 */
+                break;
+
+            default:
+                g_error ("Wrong Property Type\n");
+                break;
+        }
+
+
+    }
+
+    atoms->type = type;
+    atoms->n = nAtoms;
+    atoms->h_pos = h_pos;
+    atoms->h_vel = h_vel;
+    atoms->h_velRel = h_velRel;
+    atoms->h_nCol = h_nCol;
+    atoms->h_mass = h_mass;
+    atoms->h_radius = h_radius;
+
+    atoms->d_pos = d_pos;
+    atoms->d_vel = d_vel;
+    atoms->d_velRel = d_velRel
+    atoms->f_nCol = d_nCol;
+    atoms->d_mass = d_mass;
+    atoms->d_radius = d_radius;
+
+}
+
+
+
+
+
+
+
+
 
 
 __global__ void kernel1 (vec3f *vel, int nAtoms, double velInit);

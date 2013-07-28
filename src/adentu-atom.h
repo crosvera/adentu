@@ -21,34 +21,32 @@
 #define __ADENTU_ATOM_H__
 
 
-#include "vec3.h"
-//#include "adentu-model.h"
-//#include "adentu-grid.h"
+#include "adentu.h"
 
 typedef enum {
     ADENTU_ATOM_GRAIN,
     ADENTU_ATOM_FLUID
 } AdentuAtomType;
 
-/*const char *AdentuAtomTypeStr[] = { 
-                        [ADENTU_ATOM_GRAIN] = "GRAIN ATOM",
-                        [ADENTU_ATOM_FLUID] = "FLUID ATOM"
-}; */
-
-
 
 typedef struct _AdentuAtom {
     AdentuAtomType type;
     int n;
-    vec3f *pos;
-    vec3f *vel;
-    vec3f *velRel;
-    //int *lastTime;
-    int *nCol;
+    double *h_pos;
+    double *h_vel;
+    double *h_velRel;
+    //int *h_lastTime;
+    int *h_nCol;
+    double *h_mass;
+    double *h_radius;
 
-    double *mass;
-    double *radius;
-
+    double *d_pos;
+    double *d_vel;
+    double *d_velRel;
+    //int *d_lastTime;
+    int *d_nCol;
+    double *d_mass;
+    double *d_radius;
 } AdentuAtom;
 
 
