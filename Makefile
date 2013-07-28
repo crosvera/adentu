@@ -96,6 +96,9 @@ LDFLAGS += `pkg-config --libs glib-2.0` -lm
 INCLUDES      := -I$(CUDA_INC_PATH) -I./src -I./src/event  
 
 
+# Adentu version
+ADENTU_VERSION := 0.2
+
 
 # Target rules
 
