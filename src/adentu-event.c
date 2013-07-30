@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -18,14 +19,16 @@
 */
 
 #include <stdlib.h>
+#include <string.h>
 #include <glib.h>
 
+#include "adentu.h"
 #include "adentu-event.h"
 #include "adentu-grid.h"
 #include "adentu-model.h"
 #include "adentu-runnable.h"
 
-
+/*
 const char *AdentuEventTypeStr[] = {
     [ADENTU_EVENT_START] = "EVENT_START",
     [ADENTU_EVENT_MPC] = "EVENT_MPC",
@@ -36,8 +39,9 @@ const char *AdentuEventTypeStr[] = {
     [ADENTU_EVENT_USR] = "EVENT_USR",
     [ADENTU_EVENT_END] = "EVENT_END"
 };
+*/
 
-
+const char *ADENTU_EVENT_END = NULL;
 
 
 AdentuEvent *adentu_event_get_next (GSList **eList)
@@ -53,14 +57,11 @@ AdentuEvent *adentu_event_get_next (GSList **eList)
 
 GSList *adentu_event_schedule (GSList *eList, AdentuEvent *event)
 {
-    /*g_message ("Scheduling: owner: %d, type: %s, time: %F, nCol: %d", 
-            event->owner, AdentuEventTypeStr[event->type], event->time,
-            event->nEvents);*/
 
     return g_slist_insert_sorted (eList,
-                           event,
-                           adentu_event_compare);
-}
+                                  event,
+                                  adentu_event_compare);
+    }
 
 
 int adentu_event_compare (gconstpointer a, gconstpointer b)
@@ -78,12 +79,22 @@ int adentu_event_compare (gconstpointer a, gconstpointer b)
 
 
 
+AdentuEventHandler * adentu_event_get_handler (const AdentuEventHandler *handler[],
+                                               const char *type_name)
+{
+    for (int i = 0; handler[i] != NULL; ++i)
+        if (strcmp (*(handler[i]).type_name, type_name) == 0) // match
+            return handler[i];
 
-GSList * adentu_event_init (AdentuEventHandler *handler[],
+    return NULL;
+}
+
+
+GSList * adentu_event_init (const AdentuEventHandler *handler[],
                             AdentuModel *model)
 {
     g_message ("Setting elapsedTime=0");
-    model->elapsedTime = 0;
+    model->elapsedTime = 0.0;
 
     AdentuEvent *ev = malloc (sizeof (AdentuEvent));
     ev->type = ADENTU_EVENT_END;
@@ -92,10 +103,9 @@ GSList * adentu_event_init (AdentuEventHandler *handler[],
     model->eList = adentu_event_schedule (model->eList, ev);
 
 
-    for (int i = ADENTU_EVENT_START; i != ADENTU_EVENT_END; ++i)
+    for (int i = 0; handler[i] != NULL; ++i) 
         {
-            if (handler[i] != NULL)
-                model->eList = (*handler[i]).event_init (model);
+            model->eList = (*handler[i]).event_init (model);
         }
 
     return model->eList;
@@ -103,50 +113,46 @@ GSList * adentu_event_init (AdentuEventHandler *handler[],
 
 
 
-GSList *adentu_event_loop (AdentuEventHandler *handler[],
+GSList *adentu_event_loop (const AdentuEventHandler *handler[],
                            AdentuModel *model)
 {
     g_message ("Starting Adentu Simulation Loop...");
     AdentuEvent *ev = NULL;
-    AdentuEventType t;
+    char *t;
+    AdentuEventHandler *_handler;
     ev = adentu_event_get_next (&model->eList);
 
     while (ev->type != ADENTU_EVENT_END)
     {
         t = ev->type;
         
+        _handler = adentu_event_get_handler (handler, t);
         /* testing */
         /* g_message ("%s: Next event to attend: %s, time: %f", __FILE__, 
-                    AdentuEventTypeStr[t], event->time);
+                      t, event->time);
         */
-        if ((handler[t]) == NULL)
+        if (_handler == NULL)
             {
                 free (ev->eventData);
                 free (ev);
             }
         else
-        if ((*handler[t]).event_is_valid (model, ev))
+        if ((*_handler).event_is_valid (model, ev))
             {
-
                 adentu_runnable_exec_pre_func (model, ev);
-                (*handler[t]).event_attend (model, ev);
+                (*_handler).event_attend (model, ev);
 
                 model->elapsedTime = ev->time;
                 
                 adentu_runnable_exec_post_func (model, ev);
-
-                /* model->eList = adentu_event_schedule (model->eList,
-                                    (*handler[t]).event_get_next (model));
-                */
             }
 
-            /* predict new events */
-            for (int i = ADENTU_EVENT_START; i != ADENTU_EVENT_END; ++i)
-                {
-                    if (handler[i] != NULL)
-                        model->eList = adentu_event_schedule (model->eList,
-                                       (*handler[i]).event_get_next (model));
-                }
+        /* predict new events */
+        for (int i = 0; handler[i] != NULL; ++i) 
+            {
+                model->eList = adentu_event_schedule (model->eList,
+                               (*handler[i]).event_get_next (model));
+            }
 
 
         free (ev->eventData);

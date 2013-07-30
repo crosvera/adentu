@@ -48,13 +48,13 @@ void adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *c
     unsigned int memsize = nAtoms * 4;
 
     /* allocating host side */
-    double *h_pos = malloc (memsize * sizeof (double));
-    double *h_vel = malloc (memsize * sizeof (double));
+    adentu_real *h_pos = malloc (memsize * sizeof (adentu_real));
+    adentu_real *h_vel = malloc (memsize * sizeof (adentu_real));
 
     if (type == ADENTU_ATOM_FLUID)
-        double *h_velRel = malloc (memsize * sizeof (double));
+        adentu_real *h_velRel = malloc (memsize * sizeof (adentu_real));
     else
-        double *h_velRel = NULL;
+        adentu_real *h_velRel = NULL;
 
     int *h_nCol = malloc (nAtoms * sizeof (int));
     memset (h_nCol, 0, nAtoms * sizeof (int));
@@ -63,14 +63,14 @@ void adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *c
     double *h_radius = malloc (nAtoms * sizeof (double));
 
     /* allocating device side */
-    double *d_pos;
-    CUDA_CALL (cudaMalloc ((void **)&d_pos, memsize * sizeof (double)));
-    double *d_vel;
-    CUDA_CALL (cudaMalloc ((void **)&d_vel, memsize * sizeof (double)));
+    adentu_real *d_pos;
+    CUDA_CALL (cudaMalloc ((void **)&d_pos, memsize * sizeof (adentu_real)));
+    adentu_real *d_vel;
+    CUDA_CALL (cudaMalloc ((void **)&d_vel, memsize * sizeof (adentu_real)));
 
-    double *d_velRel = NULL;
+    adentu_real *d_velRel = NULL;
     if (type == ADENTU_ATOM_FLUID)
-        CUDA_CALL (cudaMalloc ((void **)&d_velRel, memsize * sizeof (double)));
+        CUDA_CALL (cudaMalloc ((void **)&d_velRel, memsize * sizeof (adentu_real)));
 
     int *d_nCol;
     CUDA_CALL (cudaMalloc ((void **)&d_nCol, nAtoms * sizeof (int)));
@@ -135,12 +135,13 @@ void adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *c
 
     }
 
-    CUDA_CALL (cudaMemcpy (d_pos, h_pos, memsize * sizeof (double), cudaMemcpyHostToDevice));
-    CUDA_CALL (cudaMemcpy (d_vel, h_vel, memsize * sizeof (double), cudaMemcpyHostToDevice));
+    CUDA_CALL (cudaMemcpy (d_pos, h_pos, memsize * sizeof (adentu_real), cudaMemcpyHostToDevice));
+    CUDA_CALL (cudaMemcpy (d_vel, h_vel, memsize * sizeof (adentu_real), cudaMemcpyHostToDevice));
     CUDA_CALL (cudaMemcpy (d_mass, h_mass, nAtoms * sizeof (double), cudaMemcpyHostToDevice));
     CUDA_CALL (cudaMemcpy (d_radius, h_radius, nAtoms * sizeof (double), cudaMemcpyHostToDevice));
     if (type == ADENTU_ATOM_FLUID)
-        CUDA_CALL (cudaMemcpy (d_velRel, h_velRel, memsize * sizeof (double), cudaMemcpyHostToDevice));
+        CUDA_CALL (cudaMemcpy (d_velRel, h_velRel, memsize * sizeof (adentu_real), 
+                                cudaMemcpyHostToDevice));
 
 
     atoms->type = type;
@@ -178,7 +179,7 @@ void adentu_atom_cuda_set_random_vel (AdentuAtom *atoms, AdentuModel *model)
 {
     vec3f vcm;
     __device__ vec3f d_tmp = {0.0, 0.0, 0.0};
-    double *d_vel = atoms->d_vel;
+    adentu_real *d_vel = atoms->d_vel;
     double velInit, vp2 = 0, factor;
 
     const int nAtoms = atoms->n;

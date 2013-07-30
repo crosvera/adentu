@@ -25,6 +25,7 @@
 #include "adentu-model.h"
 #include "adentu-event.h"
 
+extern const char *ADENTU_EVENT_MPC;
 extern double _adentu_event_mpc_dt;
 extern double _adentu_event_mpc_alpha;
 

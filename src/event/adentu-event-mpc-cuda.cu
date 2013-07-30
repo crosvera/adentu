@@ -28,95 +28,13 @@
 #include "adentu-model.h"
 #include "adentu-grid.h"
 #include "adentu-event.h"
-#include "vec3.h"
-#include "adentu-cuda-utils.h"
+#include "adentu-types.h"
 
 extern "C" {
+    #include "adentu-cuda.h"
     #include "adentu-event-mpc.h"
     #include "adentu-event-mpc-cuda.h"
-    #include "vec3-cuda.h"
-}
-
-
-
-
-
-__global__ void adentu_event_mpc_cuda_integrate_kernel (vec3f *pos,
-                                                        vec3f *vel,
-                                                        double dT,
-                                                        vec3f accel,
-                                                        int nAtoms);
-
-
-extern "C"
-void adentu_event_mpc_cuda_integrate (AdentuAtom *fluid,
-                                      AdentuGrid *grid,
-                                      const vec3f accel,
-                                      const double dT)
-{
-    if (!fluid)
-        return ;
-
-    vec3f *d_pos, *pos = fluid->pos;
-    vec3f *d_vel, *vel = fluid->vel;
-    int nAtoms = fluid->n;
-
-    if (nAtoms == 0)
-        return ;
-    
-    CUDA_CALL (cudaMalloc ((void **)&d_pos, nAtoms * sizeof (vec3f)));
-    CUDA_CALL (cudaMemcpy (d_pos, pos, nAtoms * sizeof (vec3f), cudaMemcpyHostToDevice));
-    CUDA_CALL (cudaMalloc ((void **)&d_vel, nAtoms * sizeof (vec3f)));
-    CUDA_CALL (cudaMemcpy (d_vel, vel, nAtoms * sizeof (vec3f), cudaMemcpyHostToDevice));
-
-    dim3 gDim; 
-    dim3 bDim;
-
-    adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
-
-
-    //g_message ("Integrating %d atoms.", nAtoms);
-
-    adentu_event_mpc_cuda_integrate_kernel<<<gDim, bDim>>> (d_pos, 
-                                                            d_vel, 
-                                                            dT, 
-                                                            accel,
-                                                            nAtoms);
-
-    CUDA_CALL (cudaMemcpy (vel, d_vel, nAtoms * sizeof (vec3f), cudaMemcpyDeviceToHost));
-    CUDA_CALL (cudaMemcpy (pos, d_pos, nAtoms * sizeof (vec3f), cudaMemcpyDeviceToHost));
-
-    CUDA_CALL (cudaFree (d_vel));
-    CUDA_CALL (cudaFree (d_pos));
-
-}
-
-
-
-__global__ void adentu_event_mpc_cuda_integrate_kernel (vec3f *pos,
-                                                        vec3f *vel,
-                                                        double dT,
-                                                        vec3f accel,
-                                                        int nAtoms)
-{
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-    if (idx >= nAtoms)
-        return ;
-
-    vec3f oldVel, newVel, newPos;
-    oldVel = newVel = vel[idx];
-    newPos = pos[idx];
-
-    newVel.x += (accel.x * dT);
-    newVel.y += (accel.y * dT);
-    newVel.z += (accel.z * dT);
-
-    newPos.x += (oldVel.x * dT + 0.5 * accel.x * dT * dT);
-    newPos.y += (oldVel.y * dT + 0.5 * accel.y * dT * dT);
-    newPos.z += (oldVel.z * dT + 0.5 * accel.z * dT * dT);
-
-    pos[idx] = newPos;
-    vel[idx] = newVel;
+    #include "adentu-types-cuda.h"
 }
 
 

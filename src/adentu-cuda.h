@@ -48,5 +48,9 @@
 
 void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n);
 
+void adentu_cuda_integrate_atoms (AdentuAtom *atoms, 
+                                  AdentuGrid *grid,
+                                  const vec3f accel,
+                                  const double dt);
 
 #endif /*__ADENTU_CUDA_UTILS_H__ */

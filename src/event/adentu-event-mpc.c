@@ -34,6 +34,7 @@
 #include "adentu-event-gfc.h"
 
 
+const char *ADENTU_EVENT_MPC = "ADENTU_EVENT_MPC";
 double _adentu_event_mpc_dt = 0.0;
 double _adentu_event_mpc_alpha = 3.141592653589793238462;
 
@@ -50,7 +51,8 @@ void adentu_event_mpc_set_alpha (double alpha)
 
 
 
-AdentuEventHandler AdentuMPCEventHandler = {adentu_event_mpc_init,
+AdentuEventHandler AdentuMPCEventHandler = {ADENTU_EVENT_MPC,
+                                            adentu_event_mpc_init,
                                             adentu_event_mpc_is_valid,
                                             adentu_event_mpc_attend,
                                             adentu_event_mpc_get_next};
@@ -98,11 +100,11 @@ void adentu_event_mpc_attend (AdentuModel *model,
 {
     
     double dT = event->time - model->elapsedTime;
-    adentu_event_mpc_cuda_integrate (model->fluid, 
+    adentu_cuda_integrate_atoms (model->fluid, 
                                      model->fGrid, 
                                      model->accel, dT);
 
-    adentu_event_mpc_cuda_integrate (model->grain,
+    adentu_cuda_integrate_atoms (model->grain,
                                      model->gGrid,
                                      model->accel, dT);
 

@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -22,11 +23,12 @@
 
 #include <glib.h>
 
-#include "vec3.h"
+#include "adentu.h"
 #include "adentu-model.h"
 
 #define correctDT(dT)   max ( max(0.999 * dT, dT - 1.0e-12), 0.0)
 
+/*
 typedef enum {
     ADENTU_EVENT_START,
     ADENTU_EVENT_MPC,   // MPC events
@@ -37,10 +39,12 @@ typedef enum {
     ADENTU_EVENT_USR,   // User event
     ADENTU_EVENT_END
 } AdentuEventType;
+*/
 
+extern const char *ADENTU_EVENT_END;
 
 typedef struct _AdentuEvent {
-    AdentuEventType type;
+    char *type;
     double time;
 
     int owner;
@@ -51,6 +55,7 @@ typedef struct _AdentuEvent {
 
 
 typedef struct _AdentuEventHandler {
+    char        *type_name;
     GSList      *(*event_init)      (AdentuModel *);
     int         (*event_is_valid)   (AdentuModel *, AdentuEvent *);
     void        (*event_attend)     (AdentuModel *, AdentuEvent *);
@@ -58,7 +63,7 @@ typedef struct _AdentuEventHandler {
 } AdentuEventHandler;
 
 
-extern const char *AdentuEventTypeStr[];
+//extern const char *AdentuEventTypeStr[];
 
 
 AdentuEvent *adentu_event_get_next (GSList **eList);
@@ -66,13 +71,11 @@ GSList *adentu_event_schedule (GSList *eList, AdentuEvent *event);
 int adentu_event_compare (gconstpointer a, gconstpointer b);
 
 
-GSList * adentu_event_init (//GSList *eList,
-                            AdentuEventHandler *handler[],
+GSList *adentu_event_init (const AdentuEventHandler *handler[],
                             AdentuModel *model);
 
-GSList *adentu_event_loop (//GSList *eList,
-                        AdentuEventHandler *handler[],
-                        AdentuModel *model);
+GSList *adentu_event_loop (const AdentuEventHandler *handler[],
+                           AdentuModel *model);
 
 
 

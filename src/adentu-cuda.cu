@@ -54,3 +54,67 @@ void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n)
     bDim->z = 1;
  
 }
+
+
+
+__global__ void adentu_cuda_integrate_atoms_kernel (double *pos,
+                                                    double *vel,
+                                                    double dt,
+                                                    vec3f accel,
+                                                    int nAtoms);
+
+extern "C"
+void adentu_cuda_integrate_atoms (AdentuAtom *atoms, 
+                                  AdentuGrid *grid,
+                                  const vec3f accel,
+                                  const double dt)
+{
+    if (!atoms || !grid)
+        return ;
+
+    if (dt == 0.0)
+        return ;
+
+    int nAtoms = atoms->n;
+    double *h_vel = atoms->h_vel;
+    double *h_pos = atoms->h_pos;
+    double *d_vel = atoms->d_vel;
+    double *d_pos = atoms->d_pos;
+
+    dim3 gDim, bDim;
+    adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
+    adentu_cuda_integrate_atoms_kernel<<<gDim, bDim>>> (d_pos, d_vel, dt,
+                                                        accel, nAtoms);
+
+    CUDA_CALL (cudaMemcpy (h_vel, d_vel, nAtoms * 4 * sizeof (double),
+                            cudaMemcpyDeviceToHost));
+    CUDA_CALL (cudaMemcpy (h_pos, d_pos, nAtoms * 4 * sizeof (double),
+                            cudaMemcpyDeviceToHost));
+    
+}
+
+__global__ void adentu_cuda_integrate_atoms_kernel (double *pos,
+                                                    double *vel,
+                                                    double dt,
+                                                    vec3f accel,
+                                                    int nAtoms)
+{
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx >= nAtoms)
+        return ;
+
+    vec3f oldVel = get_vec3f_from_array4f (vel, idx);
+    vec3f newVel = oldVel;
+    vec3f newPos = get_vec3f_from_array4f (pos, idx);
+
+    newVel.x += (accel.x * dt);
+    newVel.y += (accel.y * dt);
+    newVel.z += (accel.z * dt);
+
+    newPos.x += (oldVel.x * dt + 0.5 * accel.x * dt * dt);
+    newPos.y += (oldVel.y * dt + 0.5 * accel.y * dt * dt);
+    newPos.z += (oldVel.z * dt + 0.5 * accel.z * dt * dt);
+
+    array4_set_vec3 (pos, idx, newPos);
+    array4_set_vec3 (vel, idx, newVel);
+}

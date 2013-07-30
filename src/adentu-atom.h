@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -32,17 +33,17 @@ typedef enum {
 typedef struct _AdentuAtom {
     AdentuAtomType type;
     int n;
-    double *h_pos;
-    double *h_vel;
-    double *h_velRel;
+    adentu_real *h_pos;
+    adentu_real *h_vel;
+    adentu_real *h_velRel;
     //int *h_lastTime;
     int *h_nCol;
     double *h_mass;
     double *h_radius;
 
-    double *d_pos;
-    double *d_vel;
-    double *d_velRel;
+    adentu_real *d_pos;
+    adentu_real *d_vel;
+    adentu_real *d_velRel;
     //int *d_lastTime;
     int *d_nCol;
     double *d_mass;
@@ -52,7 +53,9 @@ typedef struct _AdentuAtom {
 
 typedef struct _AdentuPropRange {
     double from, to;
-    enum {ADENTU_PROP_CONSTANT, ADENTU_PROP_NORMAL, ADENTU_PROP_DELTA} rangeType;
+    enum {ADENTU_PROP_CONSTANT, 
+          ADENTU_PROP_NORMAL, 
+          ADENTU_PROP_DELTA} rangeType;
 } AdentuPropRange;
 
 typedef struct _AdentuAtomConfig {
