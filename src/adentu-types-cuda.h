@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -17,12 +18,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __ADENTU_VEC3_CUDA_H__
-#define __ADENTU_VEC3_CUDA_H__
+#ifndef __ADENTU_TYPES_CUDA_H__
+#define __ADENTU_TYPES_CUDA_H__
 
-#include "vec3.h"
+#include "adentu-types.h"
 
 void vRand3f_cuda (vec3f *d_v, int n);
 
+void array4Rand3f_cuda (adentu_real *d_v, int n);
 
-#endif /* __ADENTU_VEC3_CUDA_H__ */
+#endif /* __ADENTU_TYPES_CUDA_H__ */

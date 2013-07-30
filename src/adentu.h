@@ -21,11 +21,19 @@
 #ifndef __ADENTU_H__
 #define __ADENTU_H__
 
-#include "vec3.h"
+#include <stdlib.h>
+
+#include "adentu-types.h"
 
 #ifndef ADENTU_VERSION
 #define ADENTU_VERSION  "0.2"
 #endif
 
+
+/* Seed for random numbers */
+extern unsigned int adentu_srand;
+#define ADENTU_SET_SRAND(SEED) \
+    srand (SEED); srand48 (SEED); \
+    adentu_srand = SEED
 
 #endif /* __ADENTU_h__ */

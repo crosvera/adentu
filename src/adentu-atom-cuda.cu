@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -28,16 +29,16 @@
 #include "adentu-model.h"
 #include "adentu-grid.h"
 #include "adentu.h"
-#include "adentu-cuda-utils.h"
 
 extern "C" {
-    #include "vec-cuda.h"
+    #include "adentu-cuda.h"
+    #include "adentu-types-cuda.h"
     #include "adentu-atom-cuda.h"
 }
 
 
 extern "C"
-adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
+void adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
 {
     AdentuAtomType type = conf->type;
     int nAtoms = conf->nAtoms;
@@ -62,9 +63,9 @@ adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
     double *h_radius = malloc (nAtoms * sizeof (double));
 
     /* allocating device side */
-    double *d_pos = malloc (memsize * sizeof (double));
+    double *d_pos;
     CUDA_CALL (cudaMalloc ((void **)&d_pos, memsize * sizeof (double)));
-    double *d_vel = malloc (memsize * sizeof (double));
+    double *d_vel;
     CUDA_CALL (cudaMalloc ((void **)&d_vel, memsize * sizeof (double)));
 
     double *d_velRel = NULL;
@@ -82,13 +83,14 @@ adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
 
 
 
-
-
+    double tmp;
     for (int i = 0; i < nAtoms; ++i)
     {
         //lastTime[i] = 0;
         array4_set3v (h_pos, i, 0.0, 0.0, 0.0);
         array4_set3v (h_vel, i, 0.0, 0.0, 0.0);
+        if (type == ADENTU_ATOM_FLUID)
+            array4_set3v (h_velRel, i, 0.0, 0.0, 0.0);
 
         switch (pmass.rangeType) {
             case ADENTU_PROP_CONSTANT:
@@ -112,11 +114,11 @@ adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
 
         switch (pradii.rangeType) {
             case ADENTU_PROP_CONSTANT:
-                radius[i] = pradii.from;
+                h_radius[i] = pradii.from;
                 break;
 
             case ADENTU_PROP_NORMAL:
-                radius[i] = (double) rand() / (RAND_MAX + 1.0) * (pradii.to - pradii.from) + pradii.from;
+                h_radius[i] = (double) rand() / (RAND_MAX + 1.0) * (pradii.to - pradii.from) + pradii.from;
                 break;
 
             case ADENTU_PROP_DELTA:
@@ -132,6 +134,14 @@ adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
 
 
     }
+
+    CUDA_CALL (cudaMemcpy (d_pos, h_pos, memsize * sizeof (double), cudaMemcpyHostToDevice));
+    CUDA_CALL (cudaMemcpy (d_vel, h_vel, memsize * sizeof (double), cudaMemcpyHostToDevice));
+    CUDA_CALL (cudaMemcpy (d_mass, h_mass, nAtoms * sizeof (double), cudaMemcpyHostToDevice));
+    CUDA_CALL (cudaMemcpy (d_radius, h_radius, nAtoms * sizeof (double), cudaMemcpyHostToDevice));
+    if (type == ADENTU_ATOM_FLUID)
+        CUDA_CALL (cudaMemcpy (d_velRel, h_velRel, memsize * sizeof (double), cudaMemcpyHostToDevice));
+
 
     atoms->type = type;
     atoms->n = nAtoms;
@@ -156,20 +166,19 @@ adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
 
 
 
-
-
-
-
-__global__ void kernel1 (vec3f *vel, int nAtoms, double velInit);
-__global__ void kernel2 (vec3f *vel, int nAtoms, vec3f vcm);
-__global__ void kernel3 (vec3f *vel, int nAtoms, double factor, vec3f vcm);
-
+__global__ void adentu_atom_cuda_vel_kernel (adentu_real *vel, 
+                                             int nAtoms, 
+                                             double velInit,
+                                             double factor,
+                                             vec3f pvcm,
+                                             vec3f *tmp);
 
 extern "C"
-void adentu_atom_cuda_set_init_vel (AdentuAtom *atoms, AdentuModel *model)
+void adentu_atom_cuda_set_random_vel (AdentuAtom *atoms, AdentuModel *model)
 {
-    vec3f vcm, *d_vel;
-    double temp;
+    vec3f vcm;
+    __device__ vec3f d_tmp = {0.0, 0.0, 0.0};
+    double *d_vel = atoms->d_vel;
     double velInit, vp2 = 0, factor;
 
     const int nAtoms = atoms->n;
@@ -178,109 +187,78 @@ void adentu_atom_cuda_set_init_vel (AdentuAtom *atoms, AdentuModel *model)
     vecSet (vcm, 0.0, 0.0, 0.0);
 
     if (atoms->type == ADENTU_ATOM_GRAIN)
-        velInit = (model->gTemp != 0.0) ? sqrt (3 * model->gTemp) : 0.0;
+        {
+            velInit = (model->gTemp != 0.0) ? sqrt (3 * model->gTemp) : 0.0;
+            factor = (temp != 0.0) ? sqrt (model->gTemp/temp) : 1.;
+            vcm = model->vcmGrain;
+        }
     else if (atoms->type == ADENTU_ATOM_FLUID)
-        velInit = (model->fTemp != 0.0) ? sqrt (3 * model->fTemp) : 0.0;
+        {
+            velInit = (model->fTemp != 0.0) ? sqrt (3 * model->fTemp) : 0.0;
+            factor = (temp != 0.0) ? sqrt (model->fTemp/temp) : 1.;
+            vcm = model->vcmFluid;
+        }
 
-
-    CUDA_CALL (cudaMalloc ((void **)&d_vel, nAtoms * sizeof (vec3f)));
-    CUDA_CALL (cudaMemcpy (d_vel, atoms->vel, nAtoms * sizeof (vec3f), cudaMemcpyHostToDevice));
-
-    
-    vRand3f_cuda (d_vel, nAtoms);
-
+    arrayRand3f_cuda (d_vel, nAtoms);
 
     dim3 gDim ;
     dim3 bDim ;
 
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
 
-    kernel1 <<<gDim, bDim>>> (d_vel, nAtoms, velInit);
-    CUDA_CALL (cudaMemcpy (atoms->vel, d_vel, nAtoms * sizeof (vec3f), cudaMemcpyDeviceToHost));
+    adentu_atom_cuda_vel_kernel<<<gDim, bDim>>> (d_vel, nAtoms, velInit, 
+                                                 vcm, &d_tmp);
+    CUDA_CALL (cudaMemcpy (atoms->h_vel, d_vel, nAtoms * sizeof (vec3f), 
+                            cudaMemcpyDeviceToHost));
 
-    for (int i = 0; i < nAtoms; ++i)
-        vecAdd (vcm, vcm, atoms->vel[i]);
-    vecScale (vcm, vcm, (1./nAtoms));
-
-    //CUDA_CALL (cudaMemcpy (vcm, d_vcm, sizeof (vec3f), cudaMemcpyDeviceToHost));
-
-    kernel2 <<<gDim, bDim>>> (d_vel, nAtoms, vcm);
-    CUDA_CALL (cudaMemcpy (atoms->vel, d_vel, nAtoms * sizeof (vec3f), cudaMemcpyDeviceToHost));
-
-    for (int i = 0; i < nAtoms; ++i)
-        vp2 += vecDot (atoms->vel[i], atoms->vel[i]);
-
-    temp = vp2/3.;
-    
-    if (atoms->type == ADENTU_ATOM_GRAIN){
-        factor = (temp != 0.0) ? sqrt (model->gTemp/temp) : 1.;
-        vcm = model->vcmGrain;
-    } else if (atoms->type == ADENTU_ATOM_FLUID){
-        factor = (temp != 0.0) ? sqrt (model->fTemp/temp) : 1.;
-        vcm = model->vcmFluid;
-    }
-
-    kernel3 <<<gDim, bDim>>> (d_vel, nAtoms, factor, vcm);
-    CUDA_CALL (cudaMemcpy (atoms->vel, d_vel, nAtoms * sizeof (vec3f), cudaMemcpyDeviceToHost));
-
-    CUDA_CALL (cudaFree (d_vel));
 
 }
 
-
-__global__ void kernel1 (vec3f *vel, int nAtoms, double velInit)
+__global__ void adentu_atom_cuda_vel_kernel (adentu_real *vel, 
+                                             int nAtoms, 
+                                             double velInit,
+                                             double factor,
+                                             vec3f pvcm,
+                                             vec3f *tmp)
 {
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
 
     if (idx >= nAtoms)
         return ;
-
-    vec3f v;
-    vecSet (v, vel[idx].x, vel[idx].y, vel[idx].z);
-
+    vec3f v = get_vec3_from_array4f (vel, idx);
     vecScale (v, v, velInit);
-    vecSet (vel[idx], v.x, v.y, v.z);
-}
+    
+    atomicAdd (&tmp->x, v.x);
+    atomicAdd (&tmp->y, v.y);
+    atomicAdd (&tmp->z, v.z);
+    
+    if (idx == 0)
+        vecScale (*tmp, *tmp, 1.0/nAtoms);
+    __syncthreads ();
 
-
-__global__ void kernel2 (vec3f *vel, int nAtoms, vec3f vcm)
-{
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (idx >= nAtoms)
-        return ;
-
-    vec3f v;
-    vecSet (v, vel[idx].x, vel[idx].y, vel[idx].z);
-
+    vec3f vcm = *tmp;
     vecSub (v, v, vcm);
-    vecSet (vel[idx], v.x, v.y, v.z);
-}
+    if (idx == 0)
+        tmp->x = tmp->y = tmp->z = 0.0;
+    __syncthreads ();
 
-
-__global__ void kernel3 (vec3f *vel, int nAtoms, double factor, vec3f vcm)
-{
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
-
-    if (idx >= nAtoms)
-        return ;
-
-    vec3f v;
-    vecSet (v, vel[idx].x, vel[idx].y, vel[idx].z);
+    atomicAdd (&tmp->x, vecDot(v, v));
 
     vecScale (v, v, factor);
-    vecAdd (v, v, vcm);
-    vecSet (vel[idx], v.x, v.y, v.z);
+    vecAdd (v, v, pvcm);
+
+    array4_set_vec3f (vel, idx, v);
 }
 
 
+/* Next code needs to be fixed. */
 
 __global__ void adentu_atom_cuda_set_init_pos_kernel (vec3f *pos, int nAtoms, 
                                                       double *rands, double *radii, 
                                                       vec3f center, vec3f half);
 
 extern "C"
-void adentu_atom_cuda_set_init_pos (AdentuAtom *atoms, AdentuGrid *grid)
+void adentu_atom_cuda_set_random_pos (AdentuAtom *atoms, AdentuGrid *grid)
 {
     int nAtoms = atoms->n;
     vec3f origin = grid->origin;

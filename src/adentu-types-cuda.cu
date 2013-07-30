@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -19,17 +20,17 @@
 
 #include <cuda.h>
 #include <curand_kernel.h>
-//#include <curand.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include "vec3.h"
-#include "adentu-cuda-utils.h"
+#include "adentu-types.h"
 
 extern "C" {
-    #include "vec3-cuda.h"
+    #include "adentu.h"
+    #include "adentu-cuda.h"
+    #include "adentu-types-cuda.h"
 }
 
 
@@ -50,11 +51,31 @@ void vRand3f_cuda (vec3f *d_v, int n)
     adentu_cuda_set_grid (&gDim, &bDim, n);
 
     //set_seed<<<gDim, bDim>>> (d_states, time (NULL), n);
-    set_seed<<<gDim, bDim>>> (d_states, 1234567, n);
+    set_seed<<<gDim, bDim>>> (d_states, adentu_srand, n);
     vRand3f_cuda_generate<<<gDim, bDim>>> (d_v, d_states, n);
 
     CUDA_CALL (cudaFree (d_states));
 
+}
+
+
+
+__global__ void array4Rand3f_cuda_generate (adentu_real *v, curandState *states, int n);
+
+extern "C"
+void arrayRand3f_cuda (adentu_real *d_v, int n)
+{
+    curandState *d_states;
+    CUDA_CALL (cudaMalloc ((void **)&d_states, n * sizeof (curandState)));
+    
+    dim3 gDim;
+    dim3 bDim;
+    adentu_cuda_set_grid (&gDim, &bDim, n);
+
+    set_seed<<<gDim, bDim>>> (d_states, adentu_srand, n);
+    array4Rand3f_cuda_generate<<<gDim, bDim>>> (d_v, d_states, n);
+
+    CUDA_CALL (cudaFree (d_states));
 }
 
 __global__ void set_seed (curandState *states, unsigned long seed, int n)
@@ -89,5 +110,32 @@ __global__ void vRand3f_cuda_generate (vec3f *v, curandState *states, int n)
     v[idx].x = s * x;
     v[idx].y = s * y;
 
+    states[idx] = localS;
+}
+
+
+__global__ void array4Rand3f_cuda_generate (adentu_real *v, curandState *states, int n)
+{
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx >= n)
+        return ;
+
+    curandState localS = states[idx];
+    double s, x, y, z;
+    s = 2.;
+
+    while (s > 1.)
+    {
+        x = 2. - curand_uniform_double (&localS) - 1.;
+        y = 2. - curand_uniform_double (&localS) - 1.;
+        s = x * x   +   y * y;
+    }
+
+    s = 2.0 * sqrt (1.0 - s);
+    x *= s;
+    y *= s;
+    z = 1.0 - 2.0 * s;
+
+    array4_set3v (v, idx, x, y, z);
     states[idx] = localS;
 }

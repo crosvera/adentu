@@ -3,7 +3,6 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
-    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -18,40 +17,40 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cuda.h>
+#include <curand.h>
+
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
+#include <glib.h>
 
-#include "vec.h"
+#include "adentu-types.h"
+
+extern "C" {
+    #include "adentu-cuda.h"
+}
 
 
-
-void vRand3f (vec3f *v)
+extern "C"
+void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n)
 {
-    adentu_real s, x, y;
-    s = 2.;
-
-    while (s > 1.)
+    if (!(n/ADENTU_CUDA_THREADS))
+        gDim->x = 1;
+    else
     {
-        x = 2. - drand48 () - 1.;
-        y = 2. - drand48 () - 1.;
-        s = x * x   +   y * y;
+        int i = n/ADENTU_CUDA_THREADS;
+        int j = n % ADENTU_CUDA_THREADS;
+        if (j > 0)
+            gDim->x = ++i;
+        else
+            gDim->x = i;
     }
 
-    v->z = 1. - 2. * s;
-    s = 2. * sqrt (1. - s);
-    v->x = s * x;
-    v->y = s * y;
-}
+    gDim->y = 1;
+    gDim->z = 1;
 
-
-void print_vec3f (vec3f *v)
-{
-    printf ("(%f, %f, %f)\n", v->x, v->y, v->z);
-}
-
-
-void print_vec3i (vec3i *v)
-{
-    printf ("(%d, %d, %d)\n", v->x, v->y, v->z);
+    bDim->x = ADENTU_CUDA_THREADS;
+    bDim->y = 1;
+    bDim->z = 1;
+ 
 }
