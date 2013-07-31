@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -21,7 +22,7 @@
 
 #include <glib.h>
 
-#include "vec3.h"
+#include "adentu-types.h"
 #include "adentu-atom.h"
 //#include "adentu-model.h"
 
@@ -39,16 +40,6 @@ typedef enum {
 
 extern const char *AdentuCellWallTypeStr[];
 
-/*
-#define NO_WALL     0
-#define LEFT_WALL   1
-#define RIGHT_WALL  2
-#define TOP_WALL    4
-#define BOTTOM_WALL 8
-#define FRONT_WALL  16
-#define BACK_WALL   32
-*/
-
 
 typedef enum {
     ADENTU_GRID_DEFAULT,
@@ -57,10 +48,15 @@ typedef enum {
 
 
 typedef struct _AdentuCell {
-    int *nAtoms;
-    vec3f *vcm;
-    int *wall;
-    vec3f *nhat;
+    int *h_nAtoms;
+    int *h_wall;
+    float *h_vcm;
+    float *h_nhat;
+
+    int *d_nAtoms;
+    int *d_wall;
+    float *d_vcm;
+    float *d_nhat;
 } AdentuCell;
 
 
@@ -69,12 +65,15 @@ typedef struct _AdentuGrid {
     AdentuGridType type;
     vec3f origin;
     vec3f length;
-    vec3f h;    /** Cell Length */
+    vec3f h;  
     vec3i nCell;
-    int tCell;
+    unsigned int tCell;
     AdentuCell cells;
-    int *head;
-    int *linked;
+    int *h_head;
+    int *h_linked;
+    
+    int *d_head;
+    int *d_linked;
 } AdentuGrid;
 
 
@@ -101,7 +100,8 @@ typedef struct _AdentuBoundaryCond {
 } AdentuBoundaryCond;
 
 
-void adentu_grid_set_from_config (AdentuGrid *grid, AdentuGridConfig *conf);
+void adentu_grid_create_from_config (AdentuGrid *grid, 
+                                     AdentuGridConfig *conf);
 
 void adentu_grid_set_atoms (AdentuGrid *grid, AdentuAtom *atoms, AdentuBoundaryCond *bCond);
 

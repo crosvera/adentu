@@ -73,7 +73,6 @@ AdentuEvent *adentu_event_mpc_get_next (AdentuModel *model)
 {
     AdentuEvent *event = malloc (sizeof (AdentuEvent));
     event->type = ADENTU_EVENT_MPC;
-    //event->time = model->elapsedTime + model->dT;
     event->time = model->elapsedTime + _adentu_event_mpc_dt;
     event->owner = -1;
     event->partner = -1;
@@ -113,27 +112,4 @@ void adentu_event_mpc_attend (AdentuModel *model,
                            &model->bCond);
     
     adentu_event_mpc_cuda (model);
-    AdentuAtom *atom = model->fluid;
-    /*printf ("%f\n", event->time);
-    puts ("MPC Event");*/
-    for (int i = 0; i < atom->n; ++i)
-    {
-        ++atom->nCol[i];
-        /*printf (">%4d    %f %f %f    %f %f %f\n", i, 
-                atom->pos[i].x, atom->pos[i].y, atom->pos[i].z, 
-                atom->vel[i].x, atom->vel[i].y, atom->vel[i].z);
-        */
-    }
-
-    /* get next GGC and GFC events */
-    model->eList = adentu_event_schedule (model->eList,
-                                        adentu_event_ggc_get_next (model));
-    
-    
-    model->eList = adentu_event_schedule (model->eList,
-                                        adentu_event_gfc_get_next (model));
-    
-
-
-    
 }

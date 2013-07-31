@@ -64,7 +64,7 @@ struct _vec3i {
     set_3v_to_array4(array4_get_ptr_at(arr, index), v1, v2, v3)
 
 #define array4_set_vec3(arr, index, v) \
-    array_set3v(arr, index, v.x, v.y, v.z)
+    array4_set3v(arr, index, v.x, v.y, v.z)
 
 
 /* Vector functions */

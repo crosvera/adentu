@@ -46,6 +46,19 @@
 #endif
 
 
+#define ADENTU_CUDA_MALLOC(memaddr, memsize) \
+        CUDA_CALL (cudaMalloc ((void **)memaddr, memsize))
+        
+#define ADENTU_CUDA_MEMSET(ptr, chr, memsize) \
+        CUDA_CALL (cudaMemset (ptr, chr, memsize))
+        
+#define ADENTU_CUDA_MEMCPY_D2H(dst, org, memsize) \
+        CUDA_CALL (cudaMemcpy (dst, org, memsize, cudaMemcpyDeviceToHost))
+
+#define ADENTU_CUDA_MEMCPY_H2D(dst, org, memsize) \
+        CUDA_CALL (cudaMemcpy (dst, org, memsize, cudaMemcpyHostToDevice))
+
+
 void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n);
 
 void adentu_cuda_integrate_atoms (AdentuAtom *atoms, 

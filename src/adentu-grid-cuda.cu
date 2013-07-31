@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -26,29 +27,138 @@
 
 #include "adentu-atom.h"
 #include "adentu-grid.h"
-#include "vec3.h"
-#include "adentu-cuda-utils.h"
+#include "adentu-types.h"
 
 extern "C" {
     #include "adentu-grid-cuda.h"
+    #include "adentu-cuda.h"
 }
+
+
+__global__ void adentu_grid_cuda_create_cells_kernel (int *wall,
+                                                      vec3i nCell);
+
+extern "C"
+void adentu_grid_cuda_create_from_config (AdentuGrid *grid, 
+                                          AdentuGridConfig *conf)
+{
+    int *h_head, *h_linked;
+    int *d_head, *d_linked;
+    unsigned int tCell;
+    vec3i nCell = conf->cells;
+    vec3f h, length, origin;
+    AdentuGridType type;
+    AdentuCell *cells = &grid->cells;
+
+    origin = conf->origin;
+    length = conf->length;
+    type = conf->type;
+    
+    vecSet (h, length.x/nCell.x, length.y/nCell.y, length.z/nCell.z);
+
+    if (type == ADENTU_GRID_MPC)
+        {
+            vecSub (origin,
+                    origin,
+                    h);
+
+            nCell.x++;
+            nCell.y++;
+            nCell.z++;
+            vecAdd (length, length, h);
+        }
+    
+    tCell = nCell.x * nCell.y * nCell.z;
+
+    h_head = malloc (tCell * sizeof (int));
+    memset (h_head, -1, tCell * sizeof (int));
+    h_linked = NULL;
+
+    CUDA_CALL (cudaMalloc ((void **)&d_head, tCell * sizeof (int)));
+    cudaMemset (d_head, -1, tCell * sizeof (int));
+    d_linked = NULL;
+
+    cells->h_nAtoms = calloc (tCell, sizeof (int));
+    cells->h_wall = calloc (tCell, sizeof (int));
+    cells->h_vcm = calloc (4 * tCell, sizeof (float));
+    cells->h_nhat = calloc (4 * tCell, sizeof (float));
+
+    ADENTU_CUDA_MALLOC (&cells->d_nAtoms, tCell * sizeof (int));
+    ADENTU_CUDA_MEMSET (cells->d_nAtoms, 0, tCell * sizeof (int));
+    ADENTU_CUDA_MALLOC (&cells->d_wall, tCell * sizeof (int));
+    ADENTU_CUDA_MEMSET (cells->d_wall, 0, tCell * sizeof (int));
+    ADENTU_CUDA_MALLOC (&cells->d_vcm, 4 * tCell * sizeof (float));
+    ADENTU_CUDA_MEMSET (cells->d_vcm, 0, 4 * tCell * sizeof (float));
+    ADENTU_CUDA_MALLOC (&cells->d_nhat, 4 * tCell * sizeof (float));
+    ADENTU_CUDA_MEMSET (cells->d_nhat, 0, 4 * tCell * sizeof (float));
+
+    dim3 gDim, bDim;
+
+    adentu_cuda_set_grid (&gDim, &bDim, tCell);
+
+    adentu_grid_cuda_create_cells_kernel<<<gDim, bDim>>> (cells->d_wall, nCell);
+    ADENTU_CUDA_MEMCPY_D2H (cells->h_wall, cells->d_wall, tCell * sizeof (int));
+
+    grid->type = type;
+    grid->origin = origin;
+    grid->length = length;
+    grid->h = h;
+    grid->nCell = nCell;
+    grid->tCell = tCell;
+    grid->h_head = h_head;
+    grid->h_linked = h_linked;
+    grid->d_head = d_head;
+    grid->d_linked = d_linked;
+    
+}
+
+__global__ void adentu_grid_cuda_create_cells_kernel (int *wall,
+                                                      vec3i nCell)
+{
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int tCell = nCell.x * nCell.y * nCell.z;
+    if (idx >= tCell)
+        return ;
+
+    int w;
+    vec3i cPos;
+    cPos.z = idx / (nCell.x * nCell.y);
+    cPos.y = (idx % (nCell.x * nCell.y)) / nCell.x;
+    cPos.x = (idx % (nCell.x * nCell.y)) % nCell.x;
+
+    w = ADENTU_CELL_WALL_NO;
+
+    if (cPos.x == 0)
+        w |= ADENTU_CELL_WALL_LEFT;
+    else if (cPos.x == nCell.x-1)
+        w |= ADENTU_CELL_WALL_RIGHT;
+
+    if (cPos.y == 0)
+        w |= ADENTU_CELL_WALL_BOTTOM;
+    else if (cPos.y == nCell.y-1)
+        w |= ADENTU_CELL_WALL_TOP;
+
+    if (cPos.z == 0)
+        w |= ADENTU_CELL_WALL_FRONT;
+    else if (cPos.z == nCell.z-1)
+        w |= ADENTU_CELL_WALL_BACK;
+
+    wall[idx] = w;
+}
+
+
+
 
 
 __global__ void adentu_grid_cuda_filling_kernel (int *head,
                                                  int *linked,
-                                                 int *cellNAtoms,
-                                                 vec3f *pos, 
+                                                 int *cellnAtoms,
+                                                 adentu_real *pos, 
                                                  int nAtoms, 
                                                  vec3f origin, 
                                                  vec3f h,
                                                  AdentuBoundaryCond bCond,
                                                  vec3i nCell);
-
-//__device__ void set_atom_to_cell (int *head, int *linked, int idAtom, int cell);
-
-
-
-
 
 extern "C"
 void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
@@ -58,24 +168,31 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
 
     vec3f displace, originAux;
     int nAtoms = atoms->n;
-    int tCell = grid->tCell;
-    vec3f *d_pos, *pos = atoms->pos;
-    int *d_linked;
-    int *d_head;
-    int *d_cellNAtoms;
+    unsigned int tCell = grid->tCell;
+    adentu_real *h_pos = atoms->h_pos;
+    adentu_real *d_pos = atoms->d_pos;
+    int *h_linked = grid->h_linked;
+    int *h_head = grid->h_head;
+    int *d_linked = grid->d_linked;
+    int *d_head = grid->d_head;
+    int *h_cellnAtoms = grid->cells.h_nAtoms;
+    int *d_cellnAtoms = grid->cells.d_nAtoms;
 
-    CUDA_CALL (cudaMalloc ((void **)&d_cellNAtoms, tCell * sizeof (int)));
-    cudaMemset (d_cellNAtoms, 0, tCell * sizeof (int));
+    ADENTU_CUDA_MEMSET (d_cellnAtoms, 0, tCell * sizeof (int));
+    ADENTU_CUDA_MEMSET (d_head, -1, tCell * sizeof (int));
+    memset (h_cellnAtoms, 0, tCell * sizeof (int));
+    memset (h_head, -1, tCell * sizeof (int));
 
-    CUDA_CALL (cudaMalloc ((void **)&d_head, tCell * sizeof (int)));
-    cudaMemset (d_head, -1,  tCell * sizeof (int));
-
-    CUDA_CALL (cudaMalloc ((void **)&d_linked, nAtoms * sizeof (int)));
-    cudaMemset (d_linked, -1, nAtoms * sizeof (int));
-    
-    CUDA_CALL (cudaMalloc ((void **)&d_pos, nAtoms * sizeof (vec3f)));
-    CUDA_CALL (cudaMemcpy (d_pos, pos, nAtoms * sizeof (vec3f),
-                           cudaMemcpyHostToDevice));
+    if (h_linked == NULL)
+        {
+            ADENTU_CUDA_MALLOC (&d_linked, nAtoms * sizeof (int));
+            ADENTU_CUDA_MEMSET (d_linked, -1, nAtoms * sizeof (int));
+            h_linked = (int *) malloc (nAtoms * sizeof (int));
+            memset (h_linked, -1, nAtoms * sizeof (int));
+            grid->h_linked = h_linked;
+            grid->d_linked = d_linked;
+        }
+   
 
     if (grid->type ==  ADENTU_GRID_MPC)
         {
@@ -85,16 +202,13 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
         }
 
 
-    //printf ("nCell: %d, %d, %d\n", grid->nCell.x, grid->nCell.y, grid->nCell.z);
-    //printf ("tCell: %d\n", tCell);
-    dim3 gDim;
-    dim3 bDim;
+    dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
    
    
     adentu_grid_cuda_filling_kernel<<<gDim, bDim>>> (d_head, 
                                                      d_linked, 
-                                                     d_cellNAtoms, 
+                                                     d_cellnAtoms, 
                                                      d_pos, 
                                                      nAtoms,
                                                      grid->origin,
@@ -102,28 +216,13 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
                                                      *bCond,
                                                      grid->nCell);
 
-    if (grid->linked != NULL)
-        free (grid->linked);
     
-    grid->linked = (int *) malloc (nAtoms * sizeof (int));
-    
-    CUDA_CALL (cudaMemcpy (grid->linked, d_linked, nAtoms * sizeof (int),
-                           cudaMemcpyDeviceToHost));
-
-    CUDA_CALL (cudaMemcpy (grid->head, d_head, tCell * sizeof (int),
-                           cudaMemcpyDeviceToHost));
-
-    CUDA_CALL (cudaMemcpy (grid->cells.nAtoms, d_cellNAtoms, 
-                            tCell * sizeof (int), cudaMemcpyDeviceToHost));
-    
+    ADENTU_CUDA_MEMCPY_D2H (h_head, d_head, tCell * sizeof (int));
+    ADENTU_CUDA_MEMCPY_D2H (h_linked, d_linked, nAtoms * sizeof (int));
+    ADENTU_CUDA_MEMCPY_D2H (h_cellnAtoms, d_cellnAtoms, nAtoms * sizeof (int));
     
     if (grid->type == ADENTU_GRID_MPC)
         grid->origin = originAux;
-
-    CUDA_CALL (cudaFree (d_pos));
-    CUDA_CALL (cudaFree (d_cellNAtoms));
-    CUDA_CALL (cudaFree (d_head));
-    CUDA_CALL (cudaFree (d_linked));
 
 }
 
@@ -132,8 +231,8 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
 
 __global__ void adentu_grid_cuda_filling_kernel (int *head,
                                                  int *linked,
-                                                 int *cellNAtoms,
-                                                 vec3f *pos, 
+                                                 int *cellnAtoms,
+                                                 adentu_real *pos, 
                                                  int nAtoms, 
                                                  vec3f origin, 
                                                  vec3f h,
@@ -145,12 +244,7 @@ __global__ void adentu_grid_cuda_filling_kernel (int *head,
         return;
 
     vec3i cell;
-    vec3f _pos = pos[idx];
-    /*vecSet (cell, (pos[idx].x + origin.x)/h.x,
-                  (pos[idx].y + origin.y)/h.y, 
-                  (pos[idx].z + origin.z)/h.z);
-   */
-
+    vec3f _pos = get_vec3f_from_array4f (pos, idx);
 
     cell.x =  floor ((_pos.x - origin.x)/h.x);
     cell.y =  floor ((_pos.y - origin.y)/h.y);
@@ -187,23 +281,17 @@ __global__ void adentu_grid_cuda_filling_kernel (int *head,
     if (bCond.z == ADENTU_BOUNDARY_PBC && cell.z == (nCell.z-1))
         cell.z = 0; */
 
-    //printf ("idx: %d> %d, %d, %d\n", idx, cell.x, cell.y, cell.z);
     int c = nCell.x * nCell.y * cell.z + nCell.x * cell.y + cell.x;
-    //printf ("idx: %d> pos: %f, %f, %f. C: %d\n", 
-    //        idx, _pos.x, _pos.y, _pos.z, c);
-
 
     int i;
     if (atomicCAS (&head[c], -1, idx) != -1){
         i = head[c];
-        //printf ("h>idx: %d, C: %d, I: %d\n", idx, c, i);
         while (atomicCAS (&linked[i], -1, idx) != -1)
             {
-                //printf (">idx: %d, I: %d\n", idx, i);
                 i = linked[i];
             }
     }
-    atomicAdd (&cellNAtoms[c], 1);
+    atomicAdd (&cellnAtoms[c], 1);
 }
 
 

@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -27,5 +28,7 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
                                  AdentuAtom *atoms, 
                                  AdentuBoundaryCond *bCond);
 
+void adentu_grid_cuda_create_from_config (AdentuGrid *grid, 
+                                          AdentuGridConfig *conf);
 
 #endif /* __ADENTU_GRID_CUDA_H__ */

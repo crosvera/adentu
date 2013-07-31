@@ -40,16 +40,17 @@ extern "C" {
 
 
 
-__global__ void adentu_event_mpc_cuda_vcm_kernel (vec3f *vcm,
-                                                  vec3f *vel,
-                                                  vec3f *velRel,
-                                                  vec3f *nhat,
+__global__ void adentu_event_mpc_cuda_vcm_kernel (float *vcm,
+                                                  adentu_real *vel,
+                                                  adentu_real *velRel,
+                                                  float *nhat,
                                                   double alpha,
                                                   int *head,
                                                   int *linked,
                                                   int tCell,
                                                   int nAtoms);
 
+__global__ void update_nCol_kernel (int *nCol, int nAtoms)
 
 
 
@@ -59,39 +60,34 @@ void adentu_event_mpc_cuda (AdentuModel *model)
     AdentuAtom *fluid = model->fluid;
     AdentuGrid *grid = model->mpcGrid;
 
-    vec3f *vel = fluid->vel, *d_vel;
-    vec3f *vcm = grid->cells.vcm, *d_vcm;
-    vec3f *nhat = grid->cells.nhat, *d_nhat;
-    vec3f *velRel = fluid->velRel, *d_velRel;
-    int *head = grid->head, *d_head;
-    int *linked = grid->linked, *d_linked;
+    adentu_real *h_vel = fluid->h_vel;
+    adentu_real *d_vel = fluid->d_vel;
+    adentu_real *h_velRel = fluid->h_velRel;
+    adentu_real *d_velRel = fluid->d_velRel;
+    
+    float *h_vcm = grid->cells.h_vcm;
+    float *d_vcm = grid->cells.d_vcm;
+    float *h_nhat = grid->cells.h_nhat;
+    float *d_nhat = grid->cells.d_nhat;
+    
+    int *h_head = grid->h_head;
+    int *d_head = grid->d_head;
+    int *h_linked = grid->h_linked;
+    int *d_linked = grid->d_linked;
+
+    int *h_nCol = fluid->h_nCol;
+    int *d_nCol = fluid->d_nCol;
+    
     int nAtoms = fluid->n;
-    int tCell = grid->tCell;
-    //double alpha = model->alpha;
+    unsigned int tCell = grid->tCell;
     double alpha = _adentu_event_mpc_alpha;
 
 
-    CUDA_CALL (cudaMalloc ((void **)&d_vel, nAtoms * sizeof (vec3f)));
-    CUDA_CALL (cudaMemcpy (d_vel, vel, nAtoms * sizeof (vec3f), cudaMemcpyHostToDevice));
-    
-    CUDA_CALL (cudaMalloc ((void **)&d_vcm, tCell * sizeof (vec3f)));
-    CUDA_CALL (cudaMalloc ((void **)&d_nhat, tCell * sizeof (vec3f)));
-    CUDA_CALL (cudaMalloc ((void **)&d_velRel, nAtoms * sizeof (vec3f)));
-    
-    CUDA_CALL (cudaMalloc ((void **)&d_head, tCell * sizeof (int)));
-    CUDA_CALL (cudaMemcpy (d_head, head, tCell * sizeof (int), cudaMemcpyHostToDevice));
-    
-    CUDA_CALL (cudaMalloc ((void **)&d_linked, nAtoms * sizeof (int)));
-    CUDA_CALL (cudaMemcpy (d_linked, linked, nAtoms * sizeof (int), cudaMemcpyHostToDevice));
-
-
     /* set random axis */
-    vRand3f_cuda (d_nhat, tCell);
+    arrayRand3f_cuda (d_nhat, tCell);
 
-    dim3 gDim;
-    dim3 bDim;
+    dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, tCell);
-
     
     
     adentu_event_mpc_cuda_vcm_kernel<<<gDim, bDim>>> (d_vcm, 
@@ -104,25 +100,21 @@ void adentu_event_mpc_cuda (AdentuModel *model)
                                                       tCell, 
                                                       nAtoms);
 
-    CUDA_CALL (cudaMemcpy (vcm, d_vcm, tCell * sizeof (vec3f), cudaMemcpyDeviceToHost));
-    CUDA_CALL (cudaMemcpy (nhat, d_nhat, tCell * sizeof (vec3f), cudaMemcpyDeviceToHost));
-    CUDA_CALL (cudaMemcpy (vel, d_vel, nAtoms * sizeof (vec3f), cudaMemcpyDeviceToHost));
-    CUDA_CALL (cudaMemcpy (velRel, d_velRel, nAtoms * sizeof (vec3f), cudaMemcpyDeviceToHost));
+    ADENTU_CUDA_MEMCPY_D2H (h_vcm, d_vcm, 4*tCell * sizeof (float));
+    ADENTU_CUDA_MEMCPY_D2H (h_nhat, d_nhat, 4*tCell * sizeof (float));
+    ADENTU_CUDA_MEMCPY_D2H (h_vel, d_vel, 4*nAtoms * sizeof (adentu_real));
+    ADENTU_CUDA_MEMCPY_D2H (h_velRel, d_velRel, 4*nAtoms * sizeof (adentu_real));
 
-    CUDA_CALL (cudaFree (d_vcm));
-    CUDA_CALL (cudaFree (d_vel));
-    CUDA_CALL (cudaFree (d_velRel));
-    CUDA_CALL (cudaFree (d_nhat));
-    CUDA_CALL (cudaFree (d_head));
-    CUDA_CALL (cudaFree (d_linked));
-
+    adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
+    update_nCol_kernel<<<gDim, bDim>>> (d_nCol, nAtoms);
+    ADENTU_CUDA_MEMCPY_D2H (h_nCol, d_nCol, nAtoms * sizeof (int));
 }
 
 
-__global__ void adentu_event_mpc_cuda_vcm_kernel (vec3f *vcm,
-                                                  vec3f *vel,
-                                                  vec3f *velRel,
-                                                  vec3f *nhat,
+__global__ void adentu_event_mpc_cuda_vcm_kernel (float *vcm,
+                                                  adentu_real *vel,
+                                                  adentu_real *velRel,
+                                                  float *nhat,
                                                   double alpha,
                                                   int *head,
                                                   int *linked,
@@ -134,9 +126,9 @@ __global__ void adentu_event_mpc_cuda_vcm_kernel (vec3f *vcm,
     if (idx >= tCell)
         return ;
 
-    vec3f Vcm, Vel, VelRel, vR, vRG, vRnhat;
+    vec3f Vcm, Vel, VelRel, vR, vRG, vRnhat, v;
     double velRelnhat;
-    vec3f Nhat = nhat[idx];
+    vec3f Nhat = get_vec3f_from_array4f (nhat, idx);
 
 
     vecSet (Vcm, 0.0, 0.0, 0.0);
@@ -151,9 +143,10 @@ __global__ void adentu_event_mpc_cuda_vcm_kernel (vec3f *vcm,
     j = i;
     while (i != -1)
     {
-        Vcm.x += vel[i].x;
-        Vcm.y += vel[i].y;
-        Vcm.z += vel[i].z;
+        v = get_vec3f_from_array4f (vel, i);
+        Vcm.x += v.x;
+        Vcm.y += v.y;
+        Vcm.z += v.z;
 
         i = linked[i];
     }
@@ -173,10 +166,11 @@ __global__ void adentu_event_mpc_cuda_vcm_kernel (vec3f *vcm,
     i = j;
     while (i != -1)
     {
-        VelRel.x = vel[i].x - Vcm.x;
-        VelRel.y = vel[i].y - Vcm.y;
-        VelRel.z = vel[i].z - Vcm.z;
-        velRel[i] = VelRel;
+        v = get_vec3f_from_array4f (vel, i);
+        VelRel.x = v.x - Vcm.x;
+        VelRel.y = v.y - Vcm.y;
+        VelRel.z = v.z - Vcm.z;
+        array4_set_vec3(velRel, i, VelRel);
 
         i = linked[i];
     }
@@ -187,7 +181,7 @@ __global__ void adentu_event_mpc_cuda_vcm_kernel (vec3f *vcm,
     i = j;
     while (i != -1)
     {
-        VelRel = velRel[i];
+        VelRel = get_vec3f_from_array4f (velRel, i);
         velRelnhat = vecDot (VelRel, Nhat);
         
         vR.x = VelRel.x - velRelnhat * Nhat.x;
@@ -203,10 +197,20 @@ __global__ void adentu_event_mpc_cuda_vcm_kernel (vec3f *vcm,
         Vel.y = vRG.y + velRelnhat * Nhat.y + Vcm.y;
         Vel.x = vRG.z + velRelnhat * Nhat.z + Vcm.z;
 
-        vel[i] = Vel;
+        array4_set_vec3 (vel, i, Vel);
         i = linked[i];
     }
     
-    vcm[idx] = Vcm;
+    array4_set_vec3 (vcm, idx, Vcm);
+}
 
+__global__ void update_nCol_kernel (int *nCol, int nAtoms)
+{
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx >= nAtoms)
+        return ;
+
+    int col = nCol[idx];
+    ++col;
+    nCol[idx] = col;
 }
