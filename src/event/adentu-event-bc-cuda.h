@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -20,6 +21,8 @@
 #ifndef __ADENTU_EVENT_BC_CUDA_H__
 #define __ADENTU_EVENT_BC_CUDA_H__
 
+#include "adentu-atom.h"
+#include "adentu-model.h"
 
 
 AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model, 

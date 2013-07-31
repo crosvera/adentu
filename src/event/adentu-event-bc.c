@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -27,24 +28,23 @@
 #include "adentu-model.h"
 #include "adentu-grid.h"
 #include "adentu-event.h"
-#include "vec3.h"
+#include "adentu-types.h"
+#include "adentu-cuda.h"
 
-#include "adentu-event-bc.h"
-#include "adentu-event-bc-cuda.h"
-#include "adentu-event-mpc-cuda.h"
-
-#include "adentu-event-ggc.h"
-#include "adentu-event-gfc.h"
-#include "adentu-event-usr.h"
+#include "event/adentu-event-bc.h"
+#include "event/adentu-event-bc-cuda.h"
 
 
-vec3f _gVel;
-vec3f _fVel;
+const char *ADENTU_EVENT_BC_GRAIN = "ADENTU_EVENT_BC_GRAIN";
+const char *ADENTU_EVENT_BC_FLUID = "ADENTU_EVENT_BC_FLUID";
+
+vec3f _adentu_event_bc_gVel;
+vec3f _adentu_event_bc_fVel;
 
 void adentu_event_bc_set_fbc_vel (vec3f gvel, vec3f fvel)
 {
-    _gVel = gvel;
-    _fVel = fvel;
+    _adentu_event_bc_gVel = gvel;
+    _adentu_event_bc_fVel = fvel;
 }
 
 
@@ -160,54 +160,22 @@ void adentu_event_bc_attend (AdentuModel *model,
     //            model->elapsedTime, event->owner, event->time);
 
 
-    adentu_event_mpc_cuda_integrate (model->grain, 
-                                             model->gGrid, 
-                                             model->accel, dT);
+    adentu_cuda_integrate_atoms (model->grain, 
+                                 model->gGrid, 
+                                 model->accel, dT);
 
-    adentu_event_mpc_cuda_integrate (model->fluid, 
-                                             model->fGrid, 
-                                             model->accel, dT);
+    adentu_cuda_integrate_atoms (model->fluid, 
+                                 model->fGrid, 
+                                 model->accel, dT);
 
-
-
-
-
-
-
-    //model->elapsedTime = event->time;
     adentu_event_bc_attend2 (model, event);
     
-    /* Testing
-    AdentuAtom *atom = (event->type == ADENTU_EVENT_BC_GRAIN) ? model->grain : model->fluid;
-    printf ("%f\n", event->time);
-    puts ("BC Event");
-    for (int i = 0; i < atom->n; ++i)
-        printf (">%4d    %f %f %f    %f %f %f\n", i, 
-                 atom->pos[i].x, atom->pos[i].y, atom->pos[i].z, 
-                 atom->vel[i].x, atom->vel[i].y, atom->vel[i].z);
-    */
-
-    /* get next GGC and GFC events */
-    //g_message ("From BC");
-
-   /*  model->elapsedTime = event->time;
-    model->eList = adentu_event_schedule (model->eList,
-                                        adentu_event_ggc_get_next (model));
-    
-    model->eList = adentu_event_schedule (model->eList,
-                                        adentu_event_gfc_get_next (model));
-    
-    model->eList = adentu_event_schedule (model->eList,
-                                        adentu_event_usr_get_next (model));
-    */
-                            
-
 }
 
 
 
 void adentu_event_bc_attend2 (AdentuModel *model, 
-                             AdentuEvent *event)
+                              AdentuEvent *event)
 {
 
     int wall = *(int *)event->eventData;
@@ -227,8 +195,7 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             atom = model->grain;
             grid = model->gGrid;
             temp = model->gTemp;
-            //aVel = model->gVel;
-            aVel = _gVel;
+            aVel = _adentu_event_bc_gVel;
 
         } 
     else if (event->type == ADENTU_EVENT_BC_FLUID)
@@ -237,24 +204,21 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             atom = model->fluid;
             grid = model->fGrid;
             temp = model->fTemp;
-            //aVel = model->fVel;
-            aVel = _fVel;
+            aVel = _adentu_event_bc_fVel;
         }
 
 
 
-    vec3f *pos = &atom->pos[owner];
-    vec3f *vel = &atom->vel[owner];
+    vec3f pos = get_vec3f_from_array4f (atom->h_pos, owner);
+    vec3f vel = get_vec3f_from_array4f (atom->h_vel, owner);
+
 
     vec3f origin = grid->origin;
     vec3f length = grid->length;
 
     double vInit = sqrt (3 * temp);
     
-    /*g_message ("prev %3d    %f, %f, %f    %f, %f, %f", owner,
-               pos[owner].x, pos[owner].y, pos[owner].z, 
-               vel[owner].x, vel[owner].y, vel[owner].z);
-*/
+
     switch (wall)
     {
         case ADENTU_CELL_WALL_RIGHT:
@@ -262,27 +226,27 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             switch (bc.x)
             {
                 case ADENTU_BOUNDARY_PBC:
-                    pos->x = origin.x;
+                    pos.x = origin.x;
                     break;
                 case ADENTU_BOUNDARY_FBC:
-                    pos->x = origin.x;
-                    pos->y = (origin.y + length.y) * drand48 ();
-                    pos->z = (origin.z + length.z) * drand48 ();
+                    pos.x = origin.x;
+                    pos.y = (origin.y + length.y) * drand48 ();
+                    pos.z = (origin.z + length.z) * drand48 ();
 
                     vRand3f (vel);
-                    vel->x = (vel->x * vInit) + aVel.x;
-                    vel->y = (vel->y * vInit) + aVel.y;
-                    vel->z = (vel->z * vInit) + aVel.z;
+                    vel.x = (vel.x * vInit) + aVel.x;
+                    vel.y = (vel.y * vInit) + aVel.y;
+                    vel.z = (vel.z * vInit) + aVel.z;
                     break;
                 case ADENTU_BOUNDARY_BBC:
-                    pos->x = origin.x + length.x - 1e-10;
-                    vel->x *= -1;
+                    pos.x = origin.x + length.x - 1e-10;
+                    vel.x *= -1;
                     break;
                 case ADENTU_BOUNDARY_RBC:
-                    pos->x = origin.x + length.x - 1e-10;
-                    vel->x *= -1;
-                    vel->y *= -1;
-                    vel->z *= -1;
+                    pos.x = origin.x + length.x - 1e-10;
+                    vel.x *= -1;
+                    vel.y *= -1;
+                    vel.z *= -1;
                     break;
 
             }
@@ -293,27 +257,27 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             switch (bc.x)
             {
                 case ADENTU_BOUNDARY_PBC:
-                    pos->x = origin.x + length.x;
+                    pos.x = origin.x + length.x;
                     break;
                 case ADENTU_BOUNDARY_FBC:
-                    pos->x = origin.x;
-                    pos->y = (origin.y + length.y) * drand48 ();
-                    pos->z = (origin.z + length.z) * drand48 ();
+                    pos.x = origin.x;
+                    pos.y = (origin.y + length.y) * drand48 ();
+                    pos.z = (origin.z + length.z) * drand48 ();
 
                     vRand3f (vel);
-                    vel->x = (vel->x * vInit) + aVel.x;
-                    vel->y = (vel->y * vInit) + aVel.y;
-                    vel->z = (vel->z * vInit) + aVel.z;
+                    vel.x = (vel.x * vInit) + aVel.x;
+                    vel.y = (vel.y * vInit) + aVel.y;
+                    vel.z = (vel.z * vInit) + aVel.z;
                     break;
                 case ADENTU_BOUNDARY_BBC:
-                    pos->x = origin.x + 1e-10;
-                    vel->x *= -1;
+                    pos.x = origin.x + 1e-10;
+                    vel.x *= -1;
                     break;
                 case ADENTU_BOUNDARY_RBC:
-                    pos->x = origin.x + 1e-10;
-                    vel->x *= -1;
-                    vel->y *= -1;
-                    vel->z *= -1;
+                    pos.x = origin.x + 1e-10;
+                    vel.x *= -1;
+                    vel.y *= -1;
+                    vel.z *= -1;
                     break;
 
             }
@@ -324,27 +288,27 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             switch (bc.y)
             {
                 case ADENTU_BOUNDARY_PBC:
-                    pos->y = origin.y;
+                    pos.y = origin.y;
                     break;
                 case ADENTU_BOUNDARY_FBC:
-                    pos->x = (origin.x + length.x) * drand48 ();
-                    pos->y = origin.y;
-                    pos->z = (origin.z + length.z) * drand48 ();
+                    pos.x = (origin.x + length.x) * drand48 ();
+                    pos.y = origin.y;
+                    pos.z = (origin.z + length.z) * drand48 ();
 
                     vRand3f (vel);
-                    vel->x = (vel->x * vInit) + aVel.x;
-                    vel->y = (vel->y * vInit) + aVel.y;
-                    vel->z = (vel->z * vInit) + aVel.z;
+                    vel.x = (vel.x * vInit) + aVel.x;
+                    vel.y = (vel.y * vInit) + aVel.y;
+                    vel.z = (vel.z * vInit) + aVel.z;
                     break;
                 case ADENTU_BOUNDARY_BBC:
-                    pos->y = origin.y + length.y - 1e-10;
-                    vel->y *= -1;
+                    pos.y = origin.y + length.y - 1e-10;
+                    vel.y *= -1;
                     break;
                 case ADENTU_BOUNDARY_RBC:
-                    pos->y = origin.y + length.y - 1e-10;
-                    vel->x *= -1;
-                    vel->y *= -1;
-                    vel->z *= -1;
+                    pos.y = origin.y + length.y - 1e-10;
+                    vel.x *= -1;
+                    vel.y *= -1;
+                    vel.z *= -1;
                     break;
 
             }
@@ -355,27 +319,27 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             switch (bc.y)
             {
                 case ADENTU_BOUNDARY_PBC:
-                    pos->y = origin.y + length.y;
+                    pos.y = origin.y + length.y;
                     break;
                 case ADENTU_BOUNDARY_FBC:
-                    pos->x = (origin.x + length.x) * drand48 ();
-                    pos->y = origin.y;
-                    pos->z = (origin.z + length.z) * drand48 ();
+                    pos.x = (origin.x + length.x) * drand48 ();
+                    pos.y = origin.y;
+                    pos.z = (origin.z + length.z) * drand48 ();
 
                     vRand3f (vel);
-                    vel->x = (vel->x * vInit) + aVel.x;
-                    vel->y = (vel->y * vInit) + aVel.y;
-                    vel->z = (vel->z * vInit) + aVel.z;
+                    vel.x = (vel.x * vInit) + aVel.x;
+                    vel.y = (vel.y * vInit) + aVel.y;
+                    vel.z = (vel.z * vInit) + aVel.z;
                     break;
                 case ADENTU_BOUNDARY_BBC:
-                    pos->y = origin.y + 1e-10;
-                    vel->y *= -1;
+                    pos.y = origin.y + 1e-10;
+                    vel.y *= -1;
                     break;
                 case ADENTU_BOUNDARY_RBC:
-                    pos->y = origin.y + 1e-10;
-                    vel->y *= -1;
-                    vel->y *= -1;
-                    vel->z *= -1;
+                    pos.y = origin.y + 1e-10;
+                    vel.y *= -1;
+                    vel.y *= -1;
+                    vel.z *= -1;
                     break;
 
             }
@@ -386,27 +350,27 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             switch (bc.z)
             {
                 case ADENTU_BOUNDARY_PBC:
-                    pos->z = origin.z;
+                    pos.z = origin.z;
                     break;
                 case ADENTU_BOUNDARY_FBC:
-                    pos->x = (origin.x + length.x) * drand48 ();
-                    pos->y = (origin.y + length.y) * drand48 ();
-                    pos->z = origin.z;
+                    pos.x = (origin.x + length.x) * drand48 ();
+                    pos.y = (origin.y + length.y) * drand48 ();
+                    pos.z = origin.z;
 
                     vRand3f (vel);
-                    vel->x = (vel->x * vInit) + aVel.x;
-                    vel->y = (vel->y * vInit) + aVel.y;
-                    vel->z = (vel->z * vInit) + aVel.z;
+                    vel.x = (vel.x * vInit) + aVel.x;
+                    vel.y = (vel.y * vInit) + aVel.y;
+                    vel.z = (vel.z * vInit) + aVel.z;
                     break;
                 case ADENTU_BOUNDARY_BBC:
-                    pos->z = origin.z + length.z - 1e-10;
-                    vel->z *= -1;
+                    pos.z = origin.z + length.z - 1e-10;
+                    vel.z *= -1;
                     break;
                 case ADENTU_BOUNDARY_RBC:
-                    pos->z = origin.z + length.z - 1e-10;
-                    vel->x *= -1;
-                    vel->y *= -1;
-                    vel->z *= -1;
+                    pos.z = origin.z + length.z - 1e-10;
+                    vel.x *= -1;
+                    vel.y *= -1;
+                    vel.z *= -1;
                     break;
 
             }
@@ -417,27 +381,27 @@ void adentu_event_bc_attend2 (AdentuModel *model,
             switch (bc.z)
             {
                 case ADENTU_BOUNDARY_PBC:
-                    pos->z = origin.z + length.z;
+                    pos.z = origin.z + length.z;
                     break;
                 case ADENTU_BOUNDARY_FBC:
-                    pos->x = (origin.x + length.x) * drand48 ();
-                    pos->y = (origin.y + length.y) * drand48 ();
-                    pos->z = origin.z;
+                    pos.x = (origin.x + length.x) * drand48 ();
+                    pos.y = (origin.y + length.y) * drand48 ();
+                    pos.z = origin.z;
 
                     vRand3f (vel);
-                    vel->x = (vel->x * vInit) + aVel.x;
-                    vel->y = (vel->y * vInit) + aVel.y;
-                    vel->z = (vel->z * vInit) + aVel.z;
+                    vel.x = (vel.x * vInit) + aVel.x;
+                    vel.y = (vel.y * vInit) + aVel.y;
+                    vel.z = (vel.z * vInit) + aVel.z;
                     break;
                 case ADENTU_BOUNDARY_BBC:
-                    pos->z = origin.z + 1e-10;
-                    vel->z *= -1;
+                    pos.z = origin.z + 1e-10;
+                    vel.z *= -1;
                     break;
                 case ADENTU_BOUNDARY_RBC:
-                    pos->z = origin.z + 1e-10;
-                    vel->y *= -1;
-                    vel->y *= -1;
-                    vel->z *= -1;
+                    pos.z = origin.z + 1e-10;
+                    vel.y *= -1;
+                    vel.y *= -1;
+                    vel.z *= -1;
                     break;
 
             }
@@ -447,7 +411,32 @@ void adentu_event_bc_attend2 (AdentuModel *model,
     /*g_message ("post %3d    %f, %f, %f    %f, %f, %f\n", owner,
                pos[owner].x, pos[owner].y, pos[owner].z, 
                vel[owner].x, vel[owner].y, vel[owner].z);*/
-    atom->nCol[owner]++;
 
+    array4_set_vec3 (atom->h_pos, owner, pos);
+    array4_set_vec3 (atom->h_vel, owner, vel);
+    atom->h_nCol[owner]++;
+    
+    ADENTU_CUDA_MEMCPY_H2D (array4_get_ptr_at (atom->d_pos, owner), 
+                            array4_get_ptr_at (atom->h_pos, owner),
+                            4 * sizeof (adentu_real));
+    
+    ADENTU_CUDA_MEMCPY_H2D (array4_get_ptr_at (atom->d_vel, owner), 
+                            array4_get_ptr_at (atom->h_vel, owner),
+                            4 * sizeof (adentu_real));
+
+    ADENTU_CUDA_MEMCPY_H2D ((atom->d_nCol + owner),
+                            (atom->h_nCol + owner),
+                            sizeof (int));
+
+    /* if the above copy code doesn't work, try this: */
+    /* 
+    int n = atom->n;
+    ADENTU_CUDA_MEMCPY_H2D (atom->d_pos, atom->h_pos, 
+                            4 * n * sizeof (adentu_real));
+    ADENTU_CUDA_MEMCPY_H2D (atom->d_vel, atom->h_vel, 
+                            4 * n * sizeof (adentu_real));
+    ADENTU_CUDA_MEMCPY_H2D (atom->d_nCol, atom->h_nCol, 
+                            n * sizeof (int));
+    */
 }
 

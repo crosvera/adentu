@@ -58,6 +58,9 @@
 #define ADENTU_CUDA_MEMCPY_H2D(dst, org, memsize) \
         CUDA_CALL (cudaMemcpy (dst, org, memsize, cudaMemcpyHostToDevice))
 
+#define ADENTU_CUDA_FREE(ptr) \
+        CUDA_CALL (cudaFree (ptr))
+
 
 void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n);
 

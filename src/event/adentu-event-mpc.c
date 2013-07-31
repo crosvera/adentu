@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -26,12 +27,10 @@
 #include "adentu-grid.h"
 #include "adentu-model.h"
 #include "adentu-event.h"
-#include "adentu-event-mpc.h"
+#include "adentu-cuda.h"
 
-#include "adentu-event-mpc-cuda.h"
-
-#include "adentu-event-ggc.h"
-#include "adentu-event-gfc.h"
+#include "event/adentu-event-mpc.h"
+#include "event/adentu-event-mpc-cuda.h"
 
 
 const char *ADENTU_EVENT_MPC = "ADENTU_EVENT_MPC";
@@ -100,12 +99,12 @@ void adentu_event_mpc_attend (AdentuModel *model,
     
     double dT = event->time - model->elapsedTime;
     adentu_cuda_integrate_atoms (model->fluid, 
-                                     model->fGrid, 
-                                     model->accel, dT);
+                                 model->fGrid, 
+                                 model->accel, dT);
 
     adentu_cuda_integrate_atoms (model->grain,
-                                     model->gGrid,
-                                     model->accel, dT);
+                                 model->gGrid,
+                                 model->accel, dT);
 
     adentu_grid_set_atoms (model->mpcGrid,
                            model->fluid, 

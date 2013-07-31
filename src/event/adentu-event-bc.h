@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -21,12 +22,15 @@
 
 #include <glib.h>
 
-#include "vec3.h"
+#include "adentu-types.h"
 #include "adentu-event.h"
 #include "adentu-model.h"
 
-extern vec3f _gVel;
-extern vec3f _fVel;
+extern const char *ADENTU_EVENT_BC_GRAIN;
+extern const char *ADENTU_EVENT_BC_FLUID;
+
+extern vec3f _adentu_event_bc_gVel;
+extern vec3f _adentu_event_bc_fVel;
 
 void adentu_event_bc_set_fbc_vel (vec3f gvel, vec3f fvel);
 

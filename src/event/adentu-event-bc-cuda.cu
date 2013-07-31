@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -28,12 +29,13 @@
 #include "adentu-model.h"
 #include "adentu-grid.h"
 #include "adentu-event.h"
-#include "vec3.h"
-#include "adentu-cuda-utils.h"
+#include "adentu-types.h"
 
 extern "C" {
-    #include "adentu-event-bc-cuda.h"
-    #include "vec3-cuda.h"
+    #include "event/adentu-event-bc.h"
+    #include "event/adentu-event-bc-cuda.h"
+    #include "adentu-cuda.h"
+    #include "adentu-types-cuda.h"
 }
 
 #define Min(x, y)   ((x < y) ? x : y)
@@ -41,18 +43,18 @@ extern "C" {
 
 
 __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
-                                                     int *walls,
-                                                     vec3f *pos,
-                                                     vec3f *vel,
-                                                     vec3f accel,
-                                                     vec3f origin,
-                                                     vec3f length,
-                                                     int nAtoms);
+                                                    int *walls,
+                                                    adentu_real *pos,
+                                                    adentu_real *vel,
+                                                    vec3f accel,
+                                                    vec3f origin,
+                                                    vec3f length,
+                                                    int nAtoms);
 
 
 extern "C"
 AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model, 
-                                             AdentuAtomType type)
+                                            AdentuAtomType type)
 {
 
     AdentuEvent *e = NULL;
@@ -60,8 +62,11 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
 
     atom = (type == ADENTU_ATOM_GRAIN) ? model->grain : model->fluid;
 
-    vec3f *vel = atom->vel, *d_vel;
-    vec3f *pos = atom->pos, *d_pos;
+    adentu_real *h_vel = atom->h_vel;
+    adentu_real *h_pos = atom->h_pos;
+    adentu_real *d_vel = atom->d_vel;
+    adentu_real *d_pos = atom->d_pos;
+
     int nAtoms = atom->n;
 
     vec3f accel = model->accel;
@@ -72,18 +77,9 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
 
     double *times, *d_times;
     int *walls, *d_walls;
-   // int *aIds, *d_aIds;
 
-    CUDA_CALL (cudaMalloc ((void **)&d_vel, nAtoms * sizeof (vec3f)));
-    CUDA_CALL (cudaMemcpy (d_vel, vel, nAtoms * sizeof (vec3f), 
-                            cudaMemcpyHostToDevice));
-    CUDA_CALL (cudaMalloc ((void **)&d_pos, nAtoms * sizeof (vec3f)));
-    CUDA_CALL (cudaMemcpy (d_pos, pos, nAtoms * sizeof (vec3f), 
-                            cudaMemcpyHostToDevice));
-
-    CUDA_CALL (cudaMalloc ((void **)&d_times, nAtoms * sizeof (double)));
-    CUDA_CALL (cudaMalloc ((void **)&d_walls, nAtoms * sizeof (int)));
-    //CUDA_CALL (cudaMalloc ((void **)&d_aIds, nAtoms * sizeof (int)));
+    ADENTU_CUDA_MALLOC (&d_times, nAtoms * sizeof (double));
+    ADENTU_CUDA_MALLOC (&d_walls, nAtoms * sizeof (int));
 
     dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
@@ -99,12 +95,9 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
 
     times = (double *) malloc (nAtoms * sizeof (double));
     walls = (int *) malloc (nAtoms * sizeof (int));
-   
 
-    CUDA_CALL (cudaMemcpy (times, d_times, nAtoms * sizeof (double), 
-                           cudaMemcpyDeviceToHost));
-    CUDA_CALL (cudaMemcpy (walls, d_walls, nAtoms * sizeof (int), 
-                           cudaMemcpyDeviceToHost));
+    ADENTU_CUDA_MEMCPY_D2H (times, d_times, nAtoms * sizeof (double));
+    ADENTU_CUDA_MEMCPY_D2H (walls, d_walls, nAtoms * sizeof (int));
 
 
     double t = times[0];
@@ -124,32 +117,27 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
     e->partner = -1;
     e->time = times[x];
     e->nEvents = atom->nCol[x];
-    //e->eventData = (void) walls[x];
     *(int*)e->eventData = walls[x];
     e->type = (type == ADENTU_ATOM_GRAIN) ? ADENTU_EVENT_BC_GRAIN : ADENTU_EVENT_BC_FLUID;
-   
-    CUDA_CALL (cudaFree (d_pos));
-    CUDA_CALL (cudaFree (d_vel));
-    CUDA_CALL (cudaFree (d_times));
-    CUDA_CALL (cudaFree (d_walls));
+  
 
+    ADENTU_CUDA_FREE (d_times);
+    ADENTU_CUDA_FREE (d_walls);
     free (times);
     free (walls);
 
-
     return e;
-
 }
 
 
 __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
-                                                     int *walls,
-                                                     vec3f *pos,
-                                                     vec3f *vel,
-                                                     vec3f accel,
-                                                     vec3f origin,
-                                                     vec3f length,
-                                                     int nAtoms)
+                                                    int *walls,
+                                                    adentu_real *pos,
+                                                    adentu_real *vel,
+                                                    vec3f accel,
+                                                    vec3f origin,
+                                                    vec3f length,
+                                                    int nAtoms)
 {
 
     int idx = threadIdx.x + blockIdx.x * blockDim.x;
@@ -158,8 +146,8 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
         return ;
     
     double disc;
-    vec3f Vel = vel[idx];
-    vec3f Pos = pos[idx];
+    vec3f Vel = get_vec3f_from_array4f (vel, idx);
+    vec3f Pos = get_vec3f_from_array4f (pos, idx);
     vec3f limit, time;
     vec3i wall;
     vecAdd (limit, origin, length);

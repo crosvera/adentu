@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -32,9 +33,9 @@
 
 extern "C" {
     #include "adentu-cuda.h"
-    #include "adentu-event-mpc.h"
-    #include "adentu-event-mpc-cuda.h"
     #include "adentu-types-cuda.h"
+    #include "event/adentu-event-mpc.h"
+    #include "event/adentu-event-mpc-cuda.h"
 }
 
 

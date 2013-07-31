@@ -33,7 +33,7 @@ typedef struct _AdentuRunnable
     GSList *post_attend_func;
 } AdentuRunnable; */
 
-typedef void (*AdentuRunnableFunc)(AdentuModel *, AdentuEvent *);
+typedef void (*AdentuRunnableFunc)(const AdentuModel *, const AdentuEvent *);
 
 void adentu_runnable_add_pre_func (AdentuModel *model,
                                    AdentuRunnableFunc func);
