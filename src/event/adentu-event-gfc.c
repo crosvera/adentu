@@ -31,8 +31,8 @@
 #include "adentu-event.h"
 #include "adentu-types.h"
 
-#include "adentu-event-gfc.h"
-#include "adentu-event-gfc-cuda.h"
+#include "event/adentu-event-gfc.h"
+#include "event/adentu-event-gfc-cuda.h"
 
 
 #include "adentu-graphic.h"
@@ -92,10 +92,14 @@ int adentu_event_gfc_is_valid (AdentuModel *model,
         return 0;
 
     int owner = event->owner;
+    int partner = event->partner;
     int nEvents = event->nEvents;
+    int eventData = *(int *)event->eventData;
     AdentuAtom *grain = model->grain;
+    AdentuAtom *fluid = model->fluid;
 
-    if (grain->nCol[owner] == nEvents)
+    if (grain->h_nCol[owner] == nEvents &&
+        grain->h_nCol[partner] == eventData)
         return 1;
 
     return 0;
@@ -173,7 +177,7 @@ void adentu_event_gfc_attend (AdentuModel *model,
     if (fabs (pu - radius) > 10e-6)
         {
             g_error ("Bad Prediction! - PU: %f != Radius: %f", pu, radius);
-            return ;
+            //return ;
         }
 
 

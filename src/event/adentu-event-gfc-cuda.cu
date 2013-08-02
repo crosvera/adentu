@@ -34,9 +34,9 @@
 
 extern "C" {
     #include "adentu-cuda.h"
-    #include "adentu-neighbourhood.h"
+    //#include "adentu-neighbourhood.h"
     #include "adentu-neighbourhood-cuda.h"
-    #include "adentu-event-gfc-cuda.h"
+    #include "event/adentu-event-gfc-cuda.h"
     #include "adentu-types-cuda.h"
 }
 
@@ -68,18 +68,18 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
         return ev;
 
 
-    adentu_real *g_h_radius = grain->h_radius;
-    adentu_real *f_h_radius = fluid->h_radius;
+    //adentu_real *g_h_radius = grain->h_radius;
+    //adentu_real *f_h_radius = fluid->h_radius;
     adentu_real *g_d_radius = grain->d_radius;
     adentu_real *f_d_radius = fluid->d_radius;
 
-    adentu_real *g_h_pos = grain->h_pos;
-    adentu_real *f_h_pos = fluid->h_pos;
+    //adentu_real *g_h_pos = grain->h_pos;
+    //adentu_real *f_h_pos = fluid->h_pos;
     adentu_real *g_d_pos = grain->d_pos;
     adentu_real *f_d_pos = fluid->d_pos;
 
-    adentu_real *g_h_vel = grain->h_vel;
-    adentu_real *f_h_vel = fluid->h_vel;
+    //adentu_real *g_h_vel = grain->h_vel;
+    //adentu_real *f_h_vel = fluid->h_vel;
     adentu_real *g_d_vel = grain->d_vel;
     adentu_real *f_d_vel = fluid->d_vel;
 
@@ -92,15 +92,11 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
 
     unsigned int f_tCell = model->fGrid->tCell;
     
-    int *f_h_head = model->fGrid->h_head;
+    //int *f_h_head = model->fGrid->h_head;
     int *f_d_head = model->fGrid->d_head;
 
-    int *f_h_linked = model->fGrid->h_linked;
+    //int *f_h_linked = model->fGrid->h_linked;
     int *f_d_linked = model->fGrid->d_linked;
-
-    int *head = model->fGrid->head, *d_head = NULL;
-    int *linked = model->fGrid->linked, *d_linked = NULL;
-
 
     int *d_neighbours = adentu_neighbourhood_cuda_get_cell_neighbourhood (model->grain,
                                                                         model->gGrid);
@@ -120,7 +116,7 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
     adentu_cuda_set_grid (&gDim, &bDim, nGrains);
 
     AdentuEvent *events, *d_events;
-    CUDA_CALL (cudaMalloc ((void **)&d_events, gDim.x * sizeof (AdentuEvent)));
+    ADENTU_CUDA_MALLOC (&d_events, gDim.x * sizeof (AdentuEvent));
 
     adentu_event_gfc_cuda_get_next_kernel<<<gDim, bDim>>> (d_events,
                                                            d_neighbours,
@@ -135,14 +131,13 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
                                                            d_linked);
 
     events = (AdentuEvent *) malloc (gDim.x * sizeof (AdentuEvent));
-    CUDA_CALL (cudaMemcpy (events, d_events, gDim.x * sizeof (AdentuEvent),
-                           cudaMemcpyDeviceToHost));
+    ADENTU_CUDA_MEMCPY_D2H (events, d_events, gDim.x * sizeof (AdentuEvent));
 
     AdentuEvent *ev = (AdentuEvent *) malloc (sizeof (AdentuEvent));
     ev->type = ADENTU_EVENT_GFC;
     ev->time = DBL_MAX;
     ev->owner = ev->partner = -1;
-    ev->eventData = NULL;
+    ev->eventData = (int *) malloc (sizeof (int));
     
 
     for (int i = 0; i < gDim.x; ++i)
@@ -150,9 +145,11 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
             if (ev->time > events[i].time)
                 {
                     ev->time = events[i].time;
+                    ev->time = correctDT (ev->time);
                     ev->owner = events[i].owner;
                     ev->partner = events[i].partner;
-                    ev->nEvents = grain->nCol[ev->owner];
+                    ev->nEvents = grain->h_nCol[ev->owner];
+                    *(int *)ev->eventData = fluid->h_nCol[ev->partner];
                 }
         }
 
@@ -193,7 +190,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
  */
 
     __shared__ AdentuEvent _events[128];
-    _events[tid].type = ADENTU_EVENT_GFC;
+    //_events[tid].type = ADENTU_EVENT_GFC;
     _events[tid].time = DBL_MAX;
     _events[tid].owner = -1;
     _events[tid].partner = -1;
@@ -212,7 +209,7 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
     double radius;
     int _cells[27], c, a;
     AdentuEvent _ev;
-    _ev.type = ADENTU_EVENT_GFC;
+    //_ev.type = ADENTU_EVENT_GFC;
     _ev.time = DBL_MAX;
     _ev.owner = idx;
 

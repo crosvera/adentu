@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -25,6 +26,7 @@
 #include "adentu-event.h"
 #include "adentu-model.h"
 
+extern const char *ADENTU_EVENT_GGC;
 
 GSList *adentu_event_ggc_init (AdentuModel *model);
 
