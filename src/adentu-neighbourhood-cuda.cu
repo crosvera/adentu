@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -29,13 +30,13 @@
 #include "adentu-model.h"
 #include "adentu-grid.h"
 #include "adentu-event.h"
-#include "vec3.h"
-#include "adentu-cuda-utils.h"
+#include "adentu-types.h"
 
 extern "C" {
-    #include "adentu-neighbourhood.h"
+    #include "adentu-cuda.h"
+    //#include "adentu-neighbourhood.h"
     #include "adentu-neighbourhood-cuda.h"
-    #include "vec3-cuda.h"
+    #include "adentu-types-cuda.h"
 }
 
 
@@ -45,7 +46,7 @@ extern "C" {
 
 
 __global__ void adentu_neighbourhood_cuda_cell_neighbourhood_kernel (int *neighbourhood,
-                                                                     vec3f *pos,
+                                                                     adentu_real *pos,
                                                                      int nAtoms,
                                                                      vec3f gOrigin,
                                                                      int *walls,
@@ -53,29 +54,27 @@ __global__ void adentu_neighbourhood_cuda_cell_neighbourhood_kernel (int *neighb
                                                                      vec3f h);
 
 
-
+/* adentu_neighbourhood_cuda_get_cell_neighbourhood () returns a device
+ * pointer with all the neighbours cells of a given set of atoms.
+ */
 extern "C"
 int *adentu_neighbourhood_cuda_get_cell_neighbourhood (AdentuAtom *atoms,
                                                        AdentuGrid *grid)
 {
     vec3i nCell = grid->nCell;
-    int tCell = grid->tCell;
-    int *d_wall, *wall = grid->cells.wall;
-    vec3f *d_pos, *pos = atoms->pos;
+    unsigned int tCell = grid->tCell;
+
+    int *h_wall = grid->cells.h_wall;
+    int *d_wall = grid->cells.d_wall;
+
+    adentu_real *h_pos = atoms->h_pos;
+    adentu_real *d_pos = atoms->d_pos;
+
     int nAtoms = atoms->n;
     //printf ("nAtoms: %d, tCell: %d\n", nAtoms, tCell);
 
-    CUDA_CALL (cudaMalloc ((void **)&d_wall, tCell * sizeof (int)));
-    CUDA_CALL (cudaMemcpy (d_wall, wall, tCell * sizeof (int),
-                               cudaMemcpyHostToDevice));
-
-    
-    CUDA_CALL (cudaMalloc ((void **)&d_pos, nAtoms * sizeof (vec3f)));
-    CUDA_CALL (cudaMemcpy (d_pos, pos, nAtoms * sizeof (vec3f),
-                               cudaMemcpyHostToDevice));
-    
     int *d_neighbourhood, *neighbourhood;
-    CUDA_CALL (cudaMalloc ((void **)&d_neighbourhood, 27 * nAtoms * sizeof (int)));
+    ADENTU_MALLOC (&d_neighbourhood, 27 * nAtoms * sizeof (int));
     
     dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
@@ -87,21 +86,13 @@ int *adentu_neighbourhood_cuda_get_cell_neighbourhood (AdentuAtom *atoms,
                                                                          d_wall,
                                                                          nCell,
                                                                          grid->h);
-    neighbourhood = (int *) malloc (27 * nAtoms * sizeof (int));
-    CUDA_CALL (cudaMemcpy (neighbourhood, d_neighbourhood, 
-                            27 * nAtoms * sizeof (int), cudaMemcpyDeviceToHost));
 
-    CUDA_CALL (cudaFree (d_pos));
-    CUDA_CALL (cudaFree (d_wall));
-    CUDA_CALL (cudaFree (d_neighbourhood));
-
-    return neighbourhood;
-
+    return d_neighbourhood;
 }
 
 
 __global__ void adentu_neighbourhood_cuda_cell_neighbourhood_kernel (int *neighbourhood,
-                                                                     vec3f *pos,
+                                                                     adentu_real *pos,
                                                                      int nAtoms,
                                                                      vec3f gOrigin,
                                                                      int *walls,
@@ -113,10 +104,10 @@ __global__ void adentu_neighbourhood_cuda_cell_neighbourhood_kernel (int *neighb
     if (idx >= nAtoms)
         return ;
 
-    vec3f p = pos[idx];
+
+    vec3f p = get_vec3f_from_array4f (pos, idx);
     vec3i cell;
     int cellId;
-    //int *neighbours = neighbourhood[idx];
     int neighbours[27];
 
     cell.x = (p.x - gOrigin.x) / h.x;

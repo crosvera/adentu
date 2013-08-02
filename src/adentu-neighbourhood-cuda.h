@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -19,6 +20,9 @@
 
 #ifndef __ADENTU_NEIGHBOURHOOD_CUDA_H__
 #define __ADENTU_NEIGHBOURHOOD_CUDA_H__
+
+#include "adentu-atom.h"
+#include "adentu-grid.h"
 
 int *adentu_neighbourhood_cuda_get_cell_neighbourhood (AdentuAtom *atoms,
                                                        AdentuGrid *grid);
