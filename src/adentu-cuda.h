@@ -62,6 +62,8 @@
         CUDA_CALL (cudaFree (ptr))
 
 
+void adentu_cuda_reset_device (void);
+
 void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n);
 
 void adentu_cuda_integrate_atoms (AdentuAtom *atoms, 

@@ -57,9 +57,9 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
             else
                 atom1 = model->fluid;
             printf ("Vel: ");
-            print3f (atom1->vel[owner]);
+            print3f (get_vec3f_from_array4f (atom1->vel, owner));
             printf (" Pos: ");
-            print3f (atom1->pos[owner]);
+            print3f (get_vec3f_from_array4f (atom1->pos, owner));
         }
     else
     if (event->type == ADENTU_EVENT_GGC ||
@@ -72,14 +72,14 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
             else
                 atom2 = model->fluid;
             printf ("Owner Vel: ");
-            print3f (atom1->vel[owner]);
+            print3f (get_vec3f_from_array4f (atom1->vel, owner));
             printf (" Owner Pos: ");
-            print3f (atom1->pos[owner]);
+            print3f (get_vec3f_from_array4f (atom1->pos, owner));
             puts ("");
             printf ("Partner Vel: ");
-            print3f (atom2->vel[owner]);
+            print3f (get_vec3f_from_array4f (atom2->vel, owner));
             printf (" Partner Pos: ");
-            print3f (atom2->pos[owner]);
+            print3f (get_vec3f_from_array4f (atom2->pos, owner));
         }
     
     puts ("");
@@ -107,9 +107,9 @@ void print_pre_event (AdentuModel *model, AdentuEvent *event)
             else
                 atom1 = model->fluid;
             printf ("Vel: ");
-            print3f (atom1->vel[owner]);
+            print3f (get_vec3f_from_array4f (atom1->vel, owner));
             printf (" Pos: ");
-            print3f (atom1->pos[owner]);
+            print3f (get_vec3f_from_array4f (atom1->pos, owner));
         }
     else
     if (event->type == ADENTU_EVENT_GGC ||
@@ -122,14 +122,14 @@ void print_pre_event (AdentuModel *model, AdentuEvent *event)
             else
                 atom2 = model->fluid;
             printf ("Owner Vel: ");
-            print3f (atom1->vel[owner]);
+            print3f (get_vec3f_from_array4f (atom1->vel, owner));
             printf (" Owner Pos: ");
-            print3f (atom1->pos[owner]);
+            print3f (get_vec3f_from_array4f (atom1->pos, owner));
             puts ("");
             printf ("Partner Vel: ");
-            print3f (atom2->vel[owner]);
+            print3f (get_vec3f_from_array4f (atom2->vel, owner));
             printf (" Partner Pos: ");
-            print3f (atom2->pos[owner]);
+            print3f (get_vec3f_from_array4f (atom2->pos, owner));
         }
     
     puts ("");

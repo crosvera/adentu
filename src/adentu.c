@@ -28,18 +28,18 @@
 #include "adentu-event.h"
 #include "adentu-neighbourhood.h"
 #include "adentu-runnable.h"
-#include "vec3.h"
+#include "adentu-types.h"
 
 
 /* Graphics */
 #include "adentu-graphic.h"
 
 /* events */
-#include "adentu-event-mpc.h"
-#include "adentu-event-bc.h"
-#include "adentu-event-gfc.h"
-#include "adentu-event-ggc.h"
-#include "adentu-event-usr.h"
+#include "event/adentu-event-mpc.h"
+#include "event/adentu-event-bc.h"
+#include "event/adentu-event-gfc.h"
+#include "event/adentu-event-ggc.h"
+#include "event/adentu-event-usr.h"
 
 
 /* usr modules */

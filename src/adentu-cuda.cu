@@ -32,6 +32,13 @@ extern "C" {
 
 
 extern "C"
+void adentu_cuda_reset_device (void)
+{
+    cudaDeviceReset ();
+}
+
+
+extern "C"
 void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n)
 {
     if (!(n/ADENTU_CUDA_THREADS))

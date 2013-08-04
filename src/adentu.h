@@ -23,7 +23,6 @@
 
 #include <stdlib.h>
 
-#include "adentu-types.h"
 
 #ifndef ADENTU_VERSION
 #define ADENTU_VERSION  "0.2"
@@ -35,5 +34,15 @@ extern unsigned int adentu_srand;
 #define ADENTU_SET_SRAND(SEED) \
     srand (SEED); srand48 (SEED); \
     adentu_srand = SEED
+
+/* Adentu core libs */
+#include "adentu-model.h"
+#include "adentu-atom.h"
+#include "adentu-grid.h"
+#include "adentu-event.h"
+#include "adentu-neighbourhood.h"
+#include "adentu-runnable.h"
+#include "adentu-types.h"
+
 
 #endif /* __ADENTU_h__ */

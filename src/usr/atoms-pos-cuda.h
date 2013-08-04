@@ -26,6 +26,5 @@
 void adentu_usr_cuda_set_atoms_pos (AdentuModel *model);
 
 
-void adentu_usr_cuda_reset_device (void);
 
 #endif /* __ADENTU_USR_ATOMS_POS_CUDA_H__ */
