@@ -40,9 +40,11 @@ extern unsigned int adentu_srand;
 #include "adentu-atom.h"
 #include "adentu-grid.h"
 #include "adentu-event.h"
-#include "adentu-neighbourhood.h"
+//#include "adentu-neighbourhood.h"
 #include "adentu-runnable.h"
 #include "adentu-types.h"
 
+/* Graphics */
+#include "adentu-graphic.h"
 
 #endif /* __ADENTU_h__ */

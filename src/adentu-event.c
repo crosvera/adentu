@@ -28,18 +28,6 @@
 #include "adentu-model.h"
 #include "adentu-runnable.h"
 
-/*
-const char *AdentuEventTypeStr[] = {
-    [ADENTU_EVENT_START] = "EVENT_START",
-    [ADENTU_EVENT_MPC] = "EVENT_MPC",
-    [ADENTU_EVENT_BC_GRAIN] = "EVENT_BC_GRAIN",
-    [ADENTU_EVENT_BC_FLUID] = "EVENT_BC_FLUID",
-    [ADENTU_EVENT_GGC] = "EVENT_GGC",
-    [ADENTU_EVENT_GFC] = "EVENT_GFC",
-    [ADENTU_EVENT_USR] = "EVENT_USR",
-    [ADENTU_EVENT_END] = "EVENT_END"
-};
-*/
 
 const char *ADENTU_EVENT_END = NULL;
 

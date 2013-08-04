@@ -22,7 +22,7 @@
 
 #include <glib.h>
 
-#include "vec3.h"
+#include "adentu-types.h"
 #include "adentu-atom.h"
 #include "adentu-grid.h"
 
@@ -33,16 +33,10 @@ typedef struct _AdentuModel {
     vec3f accel;
     
     double totalTime;
-    //double dT;
     double elapsedTime;
-
-    //double alpha;
 
     double gTemp;
     double fTemp;
-
-    //vec3f gVel;
-    //vec3f fVel;
 
     vec3f vcmGrain;
     vec3f vcmFluid;

@@ -24,7 +24,7 @@
 #include <string.h>
 #include <GLUT/glut.h>
 
-#include "vec3.h"
+#include "adentu-types.h"
 #include "adentu-model.h"
 #include "adentu-event.h"
 #include "adentu-graphic.h"
@@ -176,16 +176,18 @@ void adentu_graphic_display (void)
     glColor3ub (255, 255, 255);
     glutWireCube (length.x);
 
+    vec3f pos;
     for (int i = 0; i < grain->n; ++i)
     {
+        pos = get_vec3f_from_array4f (grain->h_pos, i);
         glPushMatrix ();
         if (i%2)
             glColor3ub (140, 140, 140);
         else
             glColor3ub (254, 140, 100);
-        glTranslatef (grain->pos[i].x - half.x,
-                      grain->pos[i].y - half.y,
-                      grain->pos[i].z - half.z);
+        glTranslatef (pos.x - half.x,
+                      pos.y - half.y,
+                      pos.z - half.z);
         glutSolidSphere (grain->radius[i], 50, 50);
         glPopMatrix ();
     }
@@ -193,15 +195,16 @@ void adentu_graphic_display (void)
 
     for (int i = 0; i < fluid->n; ++i)
     {
+        pos = get_vec3f_from_array4f (fluid->h_pos, i);
         glPushMatrix ();
         if (i%2)
             glColor3ub (104, 227, 215);
         else
             glColor3ub (0, 227, 215);
 
-        glTranslatef (fluid->pos[i].x - half.x,
-                      fluid->pos[i].y - half.y,
-                      fluid->pos[i].z - half.z);
+        glTranslatef (pos.x - half.x,
+                      pos.y - half.y,
+                      pos.z - half.z);
         glutSolidSphere (0.01, 20, 20);
         glPopMatrix ();
     }
@@ -218,7 +221,8 @@ void adentu_graphic_display (void)
 void adentu_graphic_event_loop (void)
 {
     AdentuEvent *event = NULL;
-    AdentuEventType t;
+    char *t;
+    AdentuEventHandler *_handler;
   
     /* if (adentu_model->elapsedTime == 0)
         getchar ();
@@ -234,32 +238,28 @@ void adentu_graphic_event_loop (void)
     
     if (t != ADENTU_EVENT_END)
         {
-            if ((adentu_handler[t]) == NULL)
+            handler = adentu_event_get_handler (adentu_handler, t);
+            if (_handler == NULL)
                 {
                     free (event->eventData);
                     free (event);
                 }
             else
-            if ((*adentu_handler[t]).event_is_valid (adentu_model, event))
+            if ((*_handler).event_is_valid (adentu_model, event))
                 {
                     adentu_runnable_exec_pre_func (adentu_model, event);
-                    (*adentu_handler[t]).event_attend (adentu_model, event);
+                    (*_handler).event_attend (adentu_model, event);
 
                     adentu_model->elapsedTime = event->time;
                     
                     adentu_runnable_exec_post_func (adentu_model, event);
-
-                    /* adentu_model->eList = adentu_event_schedule (adentu_model->eList,
-                            (*adentu_handler[t]).event_get_next (adentu_model));
-                    */
                 }
 
             /* predict new events */
-            for (int i = ADENTU_EVENT_START; i != ADENTU_EVENT_END; ++i)
+            for (int i = 0; adentu_handler[i] != NULL; ++i) 
                 {
-                    if (adentu_handler[i] != NULL)
-                        adentu_model->eList = adentu_event_schedule (adentu_model->eList,
-                                       (*adentu_handler[i]).event_get_next (adentu_model));
+                    adentu_model->eList = adentu_event_schedule (adentu_model->eList,
+                               (*adentu_handler[i]).event_get_next (adentu_model));
                 }
 
 

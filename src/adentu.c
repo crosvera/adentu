@@ -22,17 +22,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "adentu-model.h"
-#include "adentu-atom.h"
-#include "adentu-grid.h"
-#include "adentu-event.h"
-#include "adentu-neighbourhood.h"
-#include "adentu-runnable.h"
-#include "adentu-types.h"
-
-
-/* Graphics */
-#include "adentu-graphic.h"
+#include "adentu.h"
 
 /* events */
 #include "event/adentu-event-mpc.h"
@@ -47,33 +37,30 @@
 #include "usr/print-event-info.h"
 
 
+/*
 AdentuEventHandler *handler[] = {
     [ADENTU_EVENT_START] = NULL,
     [ADENTU_EVENT_MPC] = NULL, //&AdentuMPCEventHandler,
     [ADENTU_EVENT_BC_GRAIN] = &AdentuBCGrainEventHandler,
     [ADENTU_EVENT_BC_FLUID] = &AdentuBCFluidEventHandler,
-    [ADENTU_EVENT_GGC] = &AdentuGGCEventHandler, /* NULL,*/
-    [ADENTU_EVENT_GFC] = NULL, //&AdentuGFCEventHandler,/* NULL,*/
+    [ADENTU_EVENT_GGC] = &AdentuGGCEventHandler, 
+    [ADENTU_EVENT_GFC] = NULL, //&AdentuGFCEventHandler,
     [ADENTU_EVENT_USR] = &AdentuUSREventHandler,
     [ADENTU_EVENT_END] = NULL
 };
-
+*/
 
 
 
 int main (int argc, char *argv[])
 {
     g_message ("Reseting CUDA Device.");
-    adentu_usr_cuda_reset_device ();
+    adentu_cuda_reset_device ();
 
     g_message ("Initializing adentu.");
     //set seeds
-    //srand (time (NULL));
-    //srand48 (time (NULL));
-    srand (1234567);
-    srand48 (1234567);
-    /* leer configuración */
-
+    //ADENTU_SET_SRAND (time (NULL));
+    ADENTU_SET_SRAND (1234567);
 
     /* crear modelo */
     AdentuModel m;
@@ -182,13 +169,6 @@ int main (int argc, char *argv[])
     adentu_usr_cuda_set_atoms_pos (&m);
 
 
-    /* oink test */
-    vecSet (m.grain->pos[0], 1.5500, 2.3500, 1.5500);
-    vecSet (m.grain->vel[0], 0, -1, 0);
-    vecSet (m.grain->pos[1], 1.5500, 1.2500, 1.5500);
-    vecSet (m.grain->vel[1], 0, 1, 0);
-
-
 
     /* General debug Info */
     vec3f half, center;
@@ -234,22 +214,11 @@ int main (int argc, char *argv[])
     if (argc == 2 && !strncmp (argv[1], "-g", 2))
         {
             adentu_graphic_init (argc, argv, &m, &handler);
-            adentu_graphic_set_time_sleep (0000);
+            adentu_graphic_set_time_sleep (0);
             adentu_graphic_start ();
         }
     else
         m.eList = adentu_event_loop (handler, &m);
-
-
-    //adentu_event_usr_set_dt (.5);
-    //m.eList = adentu_event_loop (handler, &m);
-    /* graphics (: */
-    
-
-
-
-
-
 
 
 
