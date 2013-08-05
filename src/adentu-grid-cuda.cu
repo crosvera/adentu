@@ -26,12 +26,12 @@
 #include <sys/time.h>
 
 #include "adentu-atom.h"
-#include "adentu-grid.h"
 #include "adentu-types.h"
 
 extern "C" {
     #include "adentu-grid-cuda.h"
     #include "adentu-cuda.h"
+    #include "adentu-grid.h"
 }
 
 
@@ -70,18 +70,18 @@ void adentu_grid_cuda_create_from_config (AdentuGrid *grid,
     
     tCell = nCell.x * nCell.y * nCell.z;
 
-    h_head = malloc (tCell * sizeof (int));
+    h_head = (int *) malloc (tCell * sizeof (int));
     memset (h_head, -1, tCell * sizeof (int));
     h_linked = NULL;
 
-    CUDA_CALL (cudaMalloc ((void **)&d_head, tCell * sizeof (int)));
-    cudaMemset (d_head, -1, tCell * sizeof (int));
+    ADENTU_CUDA_MALLOC (&d_head, tCell * sizeof (int));
+    ADENTU_CUDA_MEMSET (d_head, -1, tCell * sizeof (int));
     d_linked = NULL;
 
-    cells->h_nAtoms = calloc (tCell, sizeof (int));
-    cells->h_wall = calloc (tCell, sizeof (int));
-    cells->h_vcm = calloc (4 * tCell, sizeof (float));
-    cells->h_nhat = calloc (4 * tCell, sizeof (float));
+    cells->h_nAtoms = (int *) calloc (tCell, sizeof (int));
+    cells->h_wall = (int *) calloc (tCell, sizeof (int));
+    cells->h_vcm = (float *) calloc (4 * tCell, sizeof (float));
+    cells->h_nhat = (float *) calloc (4 * tCell, sizeof (float));
 
     ADENTU_CUDA_MALLOC (&cells->d_nAtoms, tCell * sizeof (int));
     ADENTU_CUDA_MEMSET (cells->d_nAtoms, 0, tCell * sizeof (int));
@@ -169,7 +169,7 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
     vec3f displace, originAux;
     int nAtoms = atoms->n;
     unsigned int tCell = grid->tCell;
-    adentu_real *h_pos = atoms->h_pos;
+    //adentu_real *h_pos = atoms->h_pos;
     adentu_real *d_pos = atoms->d_pos;
     int *h_linked = grid->h_linked;
     int *h_head = grid->h_head;

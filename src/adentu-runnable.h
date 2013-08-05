@@ -22,16 +22,8 @@
 
 #include <glib.h>
 
-#include "vec3.h"
-#include "adentu-model.h"
 #include "adentu-event.h"
-
-/*
-typedef struct _AdentuRunnable
-{
-    GSList *pre_attend_func;
-    GSList *post_attend_func;
-} AdentuRunnable; */
+#include "adentu-model.h"
 
 typedef void (*AdentuRunnableFunc)(const AdentuModel *, const AdentuEvent *);
 

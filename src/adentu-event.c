@@ -67,18 +67,18 @@ int adentu_event_compare (gconstpointer a, gconstpointer b)
 
 
 
-AdentuEventHandler * adentu_event_get_handler (const AdentuEventHandler *handler[],
-                                               const char *type_name)
+const AdentuEventHandler *adentu_event_get_handler (const AdentuEventHandler *handler[],
+                                              const char *type_name)
 {
     for (int i = 0; handler[i] != NULL; ++i)
-        if (strcmp (*(handler[i]).type_name, type_name) == 0) // match
+        if (strcmp (handler[i]->type_name, type_name) == 0) // match
             return handler[i];
 
     return NULL;
 }
 
 
-GSList * adentu_event_init (const AdentuEventHandler *handler[],
+GSList *adentu_event_init (const AdentuEventHandler *handler[],
                             AdentuModel *model)
 {
     g_message ("Setting elapsedTime=0");

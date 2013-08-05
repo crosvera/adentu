@@ -22,7 +22,7 @@
 #define __ADENTU_ATOM_H__
 
 
-#include "adentu.h"
+#include "adentu-types.h"
 
 typedef enum {
     ADENTU_ATOM_GRAIN,
@@ -38,24 +38,27 @@ typedef struct _AdentuAtom {
     adentu_real *h_velRel;
     //int *h_lastTime;
     int *h_nCol;
-    double *h_mass;
-    double *h_radius;
+    float *h_mass;
+    float *h_radius;
 
     adentu_real *d_pos;
     adentu_real *d_vel;
     adentu_real *d_velRel;
     //int *d_lastTime;
     int *d_nCol;
-    double *d_mass;
-    double *d_radius;
+    float *d_mass;
+    float *d_radius;
 } AdentuAtom;
 
 
+typedef enum {
+    ADENTU_PROP_CONSTANT,
+    ADENTU_PROP_NORMAL,
+    ADENTU_PROP_DELTA} AdentuRangeType;
+
 typedef struct _AdentuPropRange {
     double from, to;
-    enum {ADENTU_PROP_CONSTANT, 
-          ADENTU_PROP_NORMAL, 
-          ADENTU_PROP_DELTA} rangeType;
+    AdentuRangeType rangeType;
 } AdentuPropRange;
 
 typedef struct _AdentuAtomConfig {
@@ -68,7 +71,7 @@ typedef struct _AdentuAtomConfig {
 
 void adentu_atom_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf);
 //void adentu_atom_set_init_vel (AdentuAtom *atoms, AdentuModel *model);
-//void adentu_atom_set_init_pos (AdentuAtom *atoms, AdentuGrid *grid)
+//void adentu_atom_set_random_pos (AdentuAtom *atoms, AdentuGrid *grid)
 
 
 

@@ -51,7 +51,7 @@ __global__ void adentu_event_mpc_cuda_vcm_kernel (float *vcm,
                                                   int tCell,
                                                   int nAtoms);
 
-__global__ void update_nCol_kernel (int *nCol, int nAtoms)
+__global__ void update_nCol_kernel (int *nCol, int nAtoms);
 
 
 
@@ -71,9 +71,9 @@ void adentu_event_mpc_cuda (AdentuModel *model)
     float *h_nhat = grid->cells.h_nhat;
     float *d_nhat = grid->cells.d_nhat;
     
-    int *h_head = grid->h_head;
+    //int *h_head = grid->h_head;
     int *d_head = grid->d_head;
-    int *h_linked = grid->h_linked;
+    //int *h_linked = grid->h_linked;
     int *d_linked = grid->d_linked;
 
     int *h_nCol = fluid->h_nCol;
@@ -85,7 +85,7 @@ void adentu_event_mpc_cuda (AdentuModel *model)
 
 
     /* set random axis */
-    arrayRand3f_cuda (d_nhat, tCell);
+    array4Rand3f_cuda (d_nhat, tCell);
 
     dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, tCell);

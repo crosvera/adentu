@@ -23,12 +23,13 @@
 
 #include "adentu-atom.h"
 #include "adentu-model.h"
+#include "adentu-grid.h"
 
-void adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf)
+void adentu_atom_cuda_create_from_config (AdentuAtom *atoms, AdentuAtomConfig *conf);
 
 void adentu_atom_cuda_set_random_vel (AdentuAtom *atoms, AdentuModel *model);
 
-void adentu_atom_cuda_set_random_pos (AdentuAtom *atoms, AdentuGrid *grid);
+//void adentu_atom_cuda_set_random_pos (AdentuAtom *atoms, AdentuGrid *grid);
 
 
 #endif /* __ADENTU_ATOM_CUDA_H__ */

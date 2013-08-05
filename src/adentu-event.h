@@ -23,7 +23,6 @@
 
 #include <glib.h>
 
-#include "adentu.h"
 #include "adentu-model.h"
 
 #define correctDT(dT)   max ( max(0.999 * dT, dT - 1.0e-12), 0.0)
@@ -70,6 +69,8 @@ AdentuEvent *adentu_event_get_next (GSList **eList);
 GSList *adentu_event_schedule (GSList *eList, AdentuEvent *event);
 int adentu_event_compare (gconstpointer a, gconstpointer b);
 
+const AdentuEventHandler *adentu_event_get_handler (const AdentuEventHandler *handler[],
+                                                    const char *type_name);
 
 GSList *adentu_event_init (const AdentuEventHandler *handler[],
                             AdentuModel *model);

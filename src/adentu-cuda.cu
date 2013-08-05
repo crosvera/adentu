@@ -31,6 +31,24 @@ extern "C" {
 }
 
 
+
+__device__ double atomicAdd(double* address, double val)
+{
+    unsigned long long int* address_as_ull =
+                            (unsigned long long int*)address;
+    unsigned long long int old = *address_as_ull, assumed;
+    do {
+        assumed = old;
+        old = atomicCAS(address_as_ull, assumed,
+                         __double_as_longlong(val +
+                         __longlong_as_double(assumed)));
+    } while (assumed != old);
+    return __longlong_as_double(old);
+}
+
+
+
+
 extern "C"
 void adentu_cuda_reset_device (void)
 {
@@ -64,8 +82,8 @@ void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n)
 
 
 
-__global__ void adentu_cuda_integrate_atoms_kernel (double *pos,
-                                                    double *vel,
+__global__ void adentu_cuda_integrate_atoms_kernel (adentu_real *pos,
+                                                    adentu_real *vel,
                                                     double dt,
                                                     vec3f accel,
                                                     int nAtoms);
@@ -83,25 +101,23 @@ void adentu_cuda_integrate_atoms (AdentuAtom *atoms,
         return ;
 
     int nAtoms = atoms->n;
-    double *h_vel = atoms->h_vel;
-    double *h_pos = atoms->h_pos;
-    double *d_vel = atoms->d_vel;
-    double *d_pos = atoms->d_pos;
+    adentu_real *h_vel = atoms->h_vel;
+    adentu_real *h_pos = atoms->h_pos;
+    adentu_real *d_vel = atoms->d_vel;
+    adentu_real *d_pos = atoms->d_pos;
 
     dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
     adentu_cuda_integrate_atoms_kernel<<<gDim, bDim>>> (d_pos, d_vel, dt,
                                                         accel, nAtoms);
 
-    CUDA_CALL (cudaMemcpy (h_vel, d_vel, nAtoms * 4 * sizeof (double),
-                            cudaMemcpyDeviceToHost));
-    CUDA_CALL (cudaMemcpy (h_pos, d_pos, nAtoms * 4 * sizeof (double),
-                            cudaMemcpyDeviceToHost));
+    ADENTU_CUDA_MEMCPY_D2H (h_vel, d_vel, nAtoms * 4 * sizeof (adentu_real));
+    ADENTU_CUDA_MEMCPY_D2H (h_pos, d_pos, nAtoms * 4 * sizeof (adentu_real));
     
 }
 
-__global__ void adentu_cuda_integrate_atoms_kernel (double *pos,
-                                                    double *vel,
+__global__ void adentu_cuda_integrate_atoms_kernel (adentu_real *pos,
+                                                    adentu_real *vel,
                                                     double dt,
                                                     vec3f accel,
                                                     int nAtoms)

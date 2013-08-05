@@ -24,5 +24,7 @@
 
 AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model);
 
+void adentu_event_gfc_cuda_attend (AdentuModel *model,
+                                   AdentuEvent *event);
 
 #endif /* __ADENTU_EVENT_GFC_CUDA_H__ */

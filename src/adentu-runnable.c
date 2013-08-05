@@ -23,7 +23,7 @@
 
 #include "adentu-runnable.h"
 
-#include "vec3.h"
+#include "adentu-types.h"
 #include "adentu-atom.h"
 #include "adentu-grid.h"
 #include "adentu-model.h"

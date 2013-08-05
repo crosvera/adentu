@@ -28,16 +28,17 @@
 
 #include "adentu-atom.h"
 #include "adentu-model.h"
-#include "adentu-grid.h"
 #include "adentu-event.h"
-#include "adentu-types.h"
 
 extern "C" {
-    #include "adentu-cuda.h"
-    //#include "adentu-neighbourhood.h"
-    #include "adentu-neighbourhood-cuda.h"
+    #include "event/adentu-event-gfc.h"
     #include "event/adentu-event-gfc-cuda.h"
+    #include "adentu-neighbourhood-cuda.h"
     #include "adentu-types-cuda.h"
+    #include "adentu-graphic.h"
+    #include "adentu-cuda.h"
+    #include "adentu-grid-cuda.h"
+    #include "adentu-types.h"
 }
 
 
@@ -46,11 +47,11 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
                                                        int *cells,
                                                        adentu_real *gpos,
                                                        adentu_real *gvel,
-                                                       double *gradius,
+                                                       float *gradius,
                                                        int nAtoms,
                                                        adentu_real *fpos,
                                                        adentu_real *fvel,
-                                                       double *fradius,
+                                                       float *fradius,
                                                        int *head,
                                                        int *linked);
 
@@ -62,16 +63,22 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
     AdentuAtom *grain = model->grain;
     AdentuAtom *fluid = model->fluid;
 
+    AdentuEvent *ev = (AdentuEvent *) malloc (sizeof (AdentuEvent));
+    ev->type = ADENTU_EVENT_GFC;
+    ev->time = DBL_MAX;
+    ev->owner = ev->partner = -1;
+    ev->eventData = (int *) malloc (sizeof (int));
+    
     int nGrains = grain->n;
     int nFluids = fluid->n;
     if (!(nFluids && nGrains))
         return ev;
 
 
-    //adentu_real *g_h_radius = grain->h_radius;
-    //adentu_real *f_h_radius = fluid->h_radius;
-    adentu_real *g_d_radius = grain->d_radius;
-    adentu_real *f_d_radius = fluid->d_radius;
+    //float *g_h_radius = grain->h_radius;
+    //float *f_h_radius = fluid->h_radius;
+    float *g_d_radius = grain->d_radius;
+    float *f_d_radius = fluid->d_radius;
 
     //adentu_real *g_h_pos = grain->h_pos;
     //adentu_real *f_h_pos = fluid->h_pos;
@@ -84,13 +91,7 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
     adentu_real *f_d_vel = fluid->d_vel;
 
 
-
-/*
-    vec3i nCell = model->gGrid->nCell;
-    vec3f origin = model->gGrid->origin;
-    vec3f h = model->gGrid->h; */
-
-    unsigned int f_tCell = model->fGrid->tCell;
+    //unsigned int f_tCell = model->fGrid->tCell;
     
     //int *f_h_head = model->fGrid->h_head;
     int *f_d_head = model->fGrid->d_head;
@@ -120,24 +121,20 @@ AdentuEvent *adentu_event_gfc_cuda_get_next (AdentuModel *model)
 
     adentu_event_gfc_cuda_get_next_kernel<<<gDim, bDim>>> (d_events,
                                                            d_neighbours,
-                                                           d_g_pos,
-                                                           d_g_vel,
-                                                           d_g_radius,
+                                                           g_d_pos,
+                                                           g_d_vel,
+                                                           g_d_radius,
                                                            nGrains,
-                                                           d_f_pos,
-                                                           d_f_vel,
-                                                           d_f_radius,
-                                                           d_head,
-                                                           d_linked);
+                                                           f_d_pos,
+                                                           f_d_vel,
+                                                           f_d_radius,
+                                                           f_d_head,
+                                                           f_d_linked);
 
     events = (AdentuEvent *) malloc (gDim.x * sizeof (AdentuEvent));
     ADENTU_CUDA_MEMCPY_D2H (events, d_events, gDim.x * sizeof (AdentuEvent));
 
-    AdentuEvent *ev = (AdentuEvent *) malloc (sizeof (AdentuEvent));
-    ev->type = ADENTU_EVENT_GFC;
-    ev->time = DBL_MAX;
-    ev->owner = ev->partner = -1;
-    ev->eventData = (int *) malloc (sizeof (int));
+
     
 
     for (int i = 0; i < gDim.x; ++i)
@@ -170,11 +167,11 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
                                                        int *cells,
                                                        adentu_real *gpos,
                                                        adentu_real *gvel,
-                                                       double *gradius,
+                                                       float *gradius,
                                                        int nAtoms,
                                                        adentu_real *fpos,
                                                        adentu_real *fvel,
-                                                       double *fradius,
+                                                       float *fradius,
                                                        int *head,
                                                        int *linked)
 {
@@ -304,4 +301,155 @@ __global__ void adentu_event_gfc_cuda_get_next_kernel (AdentuEvent *ev,
     if (tid == 0)
         ev[bid] = _events[0];
 
+}
+
+
+
+extern "C"
+void adentu_event_gfc_cuda_attend (AdentuModel *model,
+                                   AdentuEvent *event)
+{
+    AdentuAtom *grain = model->grain;
+    AdentuAtom *fluid = model->fluid;
+
+    double dT = event->time - model->elapsedTime;
+
+    adentu_cuda_integrate_atoms (grain,
+                                 model->gGrid,
+                                 model->accel, dT);
+
+    adentu_cuda_integrate_atoms (fluid,
+                                 model->fGrid,
+                                 model->accel, dT);
+
+
+    adentu_grid_cuda_set_atoms (model->gGrid, 
+                               grain, 
+                               &model->bCond);
+    adentu_grid_cuda_set_atoms (model->fGrid, 
+                               fluid, 
+                               &model->bCond);
+
+    /* if graphics are set, update it*/
+    if (adentu_graphic_is_set)
+        adentu_graphic_display ();
+
+    int owner = event->owner;
+    int partner = event->partner;
+    
+    vec3f gvel = get_vec3f_from_array4f(grain->h_vel, owner);
+    vec3f fvel = get_vec3f_from_array4f(fluid->h_vel, partner);
+    vec3f gpos = get_vec3f_from_array4f(grain->h_pos, owner);
+    vec3f fpos = get_vec3f_from_array4f(fluid->h_pos, partner);
+    double gmass = grain->h_mass[owner];
+    double fmass = fluid->h_mass[partner];
+    double gradius = grain->h_radius[owner];
+    double fradius = fluid->h_radius[partner];
+
+    double radius = gradius + fradius;
+    vec3f pos, vel;
+    vecSub (pos, fpos, gpos);
+    vecSub (vel, fvel, gvel);
+
+    /* testing */
+    vec3f p1, p2, diffp;
+    vec3f p1p, p2p;
+    vecScale (p1, gvel, gmass);
+    vecScale (p2, fvel, fmass);
+    vec3f pAntes;
+    vecAdd (pAntes, p1, p2);
+
+    double e1, e2, diffe, eBefore;
+    e1 = gmass * vecDot (gvel, gvel);
+    e2 = fmass * vecDot (fvel, fvel);
+    eBefore = e1 + e2;
+
+
+
+    double pu = vecMod (pos);
+    
+    vec3f n;
+    vecScale (n, pos, (1/pu));
+   
+    g_message ("radius: %f, pu: %f, pu-radius: %.9f\npos: (%f, %f, %f), n: (%f, %f, %f), vecDot (n, n) = %f", 
+                radius, pu, pu-radius, pos.x, pos.y, pos.z, n.x, n.y, n.z, vecDot (n, n));
+    if (fabs (pu - radius) > 10e-6)
+        {
+            g_error ("Bad Prediction! - PU: %f != Radius: %f", pu, radius);
+            //return ;
+        }
+
+
+
+    double VN = vecDot (n, vel);
+
+    double dP = (2 * gmass * fmass * VN) / (gmass + fmass);
+    vec3f j;
+    
+    j.x = dP * n.x;
+    j.y = dP * n.y;
+    j.z = dP * n.z;
+   
+    /* update states */
+    gvel.x = gvel.x + j.x / gmass;
+    gvel.y = gvel.y + j.y / gmass;
+    gvel.z = gvel.z + j.z / gmass;
+
+    fvel.x = fvel.x - j.x / fmass;
+    fvel.y = fvel.y - j.y / fmass;
+    fvel.z = fvel.z - j.z / fmass;
+    
+    /* in cpu */
+    array4_set_vec3 (grain->h_vel, owner, gvel);
+    array4_set_vec3 (fluid->h_vel, partner, fvel);
+    grain->h_nCol[owner]++;
+    fluid->h_nCol[partner]++;
+
+    /* in gpu */
+    ADENTU_CUDA_MEMCPY_H2D (array4_get_ptr_at (grain->d_vel, owner), 
+                            array4_get_ptr_at (grain->h_vel, owner),
+                            4 * sizeof (adentu_real));
+    
+    ADENTU_CUDA_MEMCPY_H2D (array4_get_ptr_at (fluid->d_vel, partner), 
+                            array4_get_ptr_at (fluid->h_vel, partner),
+                            4 * sizeof (adentu_real));
+
+    ADENTU_CUDA_MEMCPY_H2D ((grain->d_nCol + owner),
+                            (grain->h_nCol + owner),
+                            sizeof (int));
+
+    ADENTU_CUDA_MEMCPY_H2D ((fluid->d_nCol + partner),
+                            (fluid->h_nCol + partner),
+                            sizeof (int));
+    /* if the above copy code doesn't work, try this: */
+    /* 
+    int gn = grain->n;
+    int fn = fluid->n;
+    ADENTU_CUDA_MEMCPY_H2D (grain->d_vel, grain->h_vel, 
+                            4 * gn * sizeof (adentu_real));
+    ADENTU_CUDA_MEMCPY_H2D (fluid->d_vel, fluid->h_vel, 
+                            4 * fn * sizeof (adentu_real));
+    ADENTU_CUDA_MEMCPY_H2D (grain->d_nCol, grain->h_nCol, 
+                            gn * sizeof (int));
+    ADENTU_CUDA_MEMCPY_H2D (fluid->d_nCol, fluid->h_nCol, 
+                            fn * sizeof (int));
+    */   
+
+
+
+    /* testing */
+    vecScale (p1p, gvel, gmass);
+    vecScale (p2p, fvel, fmass);
+    vec3f pDespues;
+    vecAdd (pDespues, p1p, p2p);
+
+    vecSub (diffp, pDespues, pAntes);
+
+    double e1p, e2p, eAfter;
+    e1p = gmass * vecDot (gvel, gvel);
+    e2p = fmass * vecDot (fvel, fvel);
+    eAfter = e1p + e2p;
+    diffe = eAfter - eBefore;
+    
+    g_message ("Momentum vecMod(diffp): %.8f, Kinetic Energy diffe: %.8f", vecMod(diffp), diffe);
 }

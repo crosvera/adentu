@@ -24,8 +24,6 @@
 #include "adentu-atom.h"
 #include "adentu-model.h"
 #include "adentu-grid.h"
-#include "adentu.h"
-
 #include "adentu-atom-cuda.h"
 
 
@@ -45,7 +43,9 @@ void adentu_atom_set_init_vel (AdentuAtom *atoms, AdentuModel *model)
 }
 
 
-void adentu_atom_set_init_pos (AdentuAtom *atoms, AdentuGrid *grid)
+/* TODO
+void adentu_atom_set_random_pos (AdentuAtom *atoms, AdentuGrid *grid)
 {
     adentu_atom_cuda_set_random_pos (atoms, grid);
 }
+*/

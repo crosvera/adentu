@@ -26,7 +26,7 @@
 #include "adentu-event.h"
 #include "adentu-model.h"
 
-extern const char *ADENTU_EVENT_GGC;
+extern char ADENTU_EVENT_GGC[];
 
 GSList *adentu_event_ggc_init (AdentuModel *model);
 
@@ -34,10 +34,6 @@ AdentuEvent *adentu_event_ggc_get_next (AdentuModel *model);
 
 int adentu_event_ggc_is_valid (AdentuModel *model,
                               AdentuEvent *event);
-
-
-void adentu_event_ggc_attend (AdentuModel *model, 
-                             AdentuEvent *event);
 
 extern AdentuEventHandler AdentuGGCEventHandler;
 

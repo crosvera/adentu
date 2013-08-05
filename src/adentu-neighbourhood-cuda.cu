@@ -62,19 +62,19 @@ int *adentu_neighbourhood_cuda_get_cell_neighbourhood (AdentuAtom *atoms,
                                                        AdentuGrid *grid)
 {
     vec3i nCell = grid->nCell;
-    unsigned int tCell = grid->tCell;
+    //unsigned int tCell = grid->tCell;
 
-    int *h_wall = grid->cells.h_wall;
+    //int *h_wall = grid->cells.h_wall;
     int *d_wall = grid->cells.d_wall;
 
-    adentu_real *h_pos = atoms->h_pos;
+    //adentu_real *h_pos = atoms->h_pos;
     adentu_real *d_pos = atoms->d_pos;
 
     int nAtoms = atoms->n;
     //printf ("nAtoms: %d, tCell: %d\n", nAtoms, tCell);
 
-    int *d_neighbourhood, *neighbourhood;
-    ADENTU_MALLOC (&d_neighbourhood, 27 * nAtoms * sizeof (int));
+    int *d_neighbourhood;
+    ADENTU_CUDA_MALLOC (&d_neighbourhood, 27 * nAtoms * sizeof (int));
     
     dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);

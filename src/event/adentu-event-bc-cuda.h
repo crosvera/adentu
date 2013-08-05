@@ -23,10 +23,14 @@
 
 #include "adentu-atom.h"
 #include "adentu-model.h"
+#include "adentu-event.h"
+#include "adentu-types.h"
 
 
 AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model, 
                                             AdentuAtomType type);
 
+void adentu_event_bc_cuda_attend (AdentuModel *model, 
+                                  AdentuEvent *event);
 
 #endif /* __ADENTU_EVENT_BC_CUDA_H__ */

@@ -21,9 +21,9 @@
 #include "adentu-event.h"
 
 
-void print_event (AdentuModel *model, AdentuEvent *event);
+void print_event (const AdentuModel *model, const AdentuEvent *event);
 
-void print_post_event (AdentuModel *model, AdentuEvent *event);
+void print_post_event (const AdentuModel *model, const AdentuEvent *event);
 
-void print_pre_event (AdentuModel *model, AdentuEvent *event);
+void print_pre_event (const AdentuModel *model, const AdentuEvent *event);
 

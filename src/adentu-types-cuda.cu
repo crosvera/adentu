@@ -25,11 +25,11 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#include "adentu-types.h"
 
 extern "C" {
     #include "adentu.h"
     #include "adentu-cuda.h"
+    #include "adentu-types.h"
     #include "adentu-types-cuda.h"
 }
 
@@ -63,7 +63,7 @@ void vRand3f_cuda (vec3f *d_v, int n)
 __global__ void array4Rand3f_cuda_generate (adentu_real *v, curandState *states, int n);
 
 extern "C"
-void arrayRand3f_cuda (adentu_real *d_v, int n)
+void array4Rand3f_cuda (adentu_real *d_v, int n)
 {
     curandState *d_states;
     CUDA_CALL (cudaMalloc ((void **)&d_states, n * sizeof (curandState)));

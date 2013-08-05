@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -28,23 +29,25 @@
 #include "adentu-event.h"
 
 #include "usr/print-event-info.h"
+#include "event/adentu-event-ggc.h"
+#include "event/adentu-event-gfc.h"
+#include "event/adentu-event-mpc.h"
+#include "event/adentu-event-bc.h"
 
-void print_event (AdentuModel *model, AdentuEvent *event)
+void print_event (const AdentuModel *model, const AdentuEvent *event)
 {
     printf ("Event type: %s, time: %f, owner: %d, partner: %d\n", 
-            AdentuEventTypeStr[event->type],
-            event->time, event->owner, event->partner);
+            event->type, event->time, event->owner, event->partner);
 }
 
-void print_post_event (AdentuModel *model, AdentuEvent *event)
+void print_post_event (const AdentuModel *model, const AdentuEvent *event)
 {
     int owner = event->owner;
     int partner = event->partner;
 
     AdentuAtom *atom1, *atom2;
     
-    printf ("pos> type: %s, time: %.10f ", AdentuEventTypeStr[event->type],
-                                        event->time);
+    printf ("pos> type: %s, time: %.10f ", event->type, event->time);
     
     if (event->type == ADENTU_EVENT_BC_GRAIN ||
         event->type == ADENTU_EVENT_BC_FLUID)
@@ -57,9 +60,9 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
             else
                 atom1 = model->fluid;
             printf ("Vel: ");
-            print3f (get_vec3f_from_array4f (atom1->vel, owner));
+            print3f (get_vec3f_from_array4f (atom1->h_vel, owner));
             printf (" Pos: ");
-            print3f (get_vec3f_from_array4f (atom1->pos, owner));
+            print3f (get_vec3f_from_array4f (atom1->h_pos, owner));
         }
     else
     if (event->type == ADENTU_EVENT_GGC ||
@@ -72,14 +75,14 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
             else
                 atom2 = model->fluid;
             printf ("Owner Vel: ");
-            print3f (get_vec3f_from_array4f (atom1->vel, owner));
+            print3f (get_vec3f_from_array4f (atom1->h_vel, owner));
             printf (" Owner Pos: ");
-            print3f (get_vec3f_from_array4f (atom1->pos, owner));
+            print3f (get_vec3f_from_array4f (atom1->h_pos, owner));
             puts ("");
             printf ("Partner Vel: ");
-            print3f (get_vec3f_from_array4f (atom2->vel, owner));
+            print3f (get_vec3f_from_array4f (atom2->h_vel, owner));
             printf (" Partner Pos: ");
-            print3f (get_vec3f_from_array4f (atom2->pos, owner));
+            print3f (get_vec3f_from_array4f (atom2->h_pos, owner));
         }
     
     puts ("");
@@ -88,15 +91,14 @@ void print_post_event (AdentuModel *model, AdentuEvent *event)
 }
 
 
-void print_pre_event (AdentuModel *model, AdentuEvent *event)
+void print_pre_event (const AdentuModel *model, const AdentuEvent *event)
 {
     int owner = event->owner;
     int partner = event->partner;
 
     AdentuAtom *atom1, *atom2;
     
-    printf ("pre> type: %s, time: %.10f ", AdentuEventTypeStr[event->type],
-                                        model->elapsedTime);
+    printf ("pre> type: %s, time: %.10f ", event->type, model->elapsedTime);
     
     if (event->type == ADENTU_EVENT_BC_GRAIN ||
         event->type == ADENTU_EVENT_BC_FLUID)
@@ -107,9 +109,9 @@ void print_pre_event (AdentuModel *model, AdentuEvent *event)
             else
                 atom1 = model->fluid;
             printf ("Vel: ");
-            print3f (get_vec3f_from_array4f (atom1->vel, owner));
+            print3f (get_vec3f_from_array4f (atom1->h_vel, owner));
             printf (" Pos: ");
-            print3f (get_vec3f_from_array4f (atom1->pos, owner));
+            print3f (get_vec3f_from_array4f (atom1->h_pos, owner));
         }
     else
     if (event->type == ADENTU_EVENT_GGC ||
@@ -122,14 +124,14 @@ void print_pre_event (AdentuModel *model, AdentuEvent *event)
             else
                 atom2 = model->fluid;
             printf ("Owner Vel: ");
-            print3f (get_vec3f_from_array4f (atom1->vel, owner));
+            print3f (get_vec3f_from_array4f (atom1->h_vel, owner));
             printf (" Owner Pos: ");
-            print3f (get_vec3f_from_array4f (atom1->pos, owner));
+            print3f (get_vec3f_from_array4f (atom1->h_pos, owner));
             puts ("");
             printf ("Partner Vel: ");
-            print3f (get_vec3f_from_array4f (atom2->vel, owner));
+            print3f (get_vec3f_from_array4f (atom2->h_vel, owner));
             printf (" Partner Pos: ");
-            print3f (get_vec3f_from_array4f (atom2->pos, owner));
+            print3f (get_vec3f_from_array4f (atom2->h_pos, owner));
         }
     
     puts ("");

@@ -22,11 +22,11 @@
 #define __ADENTU_TYPES_H__
 
 #ifndef adentu_real
-#define adentu_real double 
+#define adentu_real float 
 #endif
 
 #ifndef adentu_int
-#define adentu_int long
+#define adentu_int int
 #endif
 
 
@@ -98,6 +98,13 @@ struct _vec3i {
         (v1).x = (v2).y * (v3).z  -  (v2).z * (v3).y,   \
         (v1).y = (v2).z * (v3).x  -  (v2).x * (v3).z,   \
         (v1).z = (v2).x * (v3).y  -  (v2).y * (v3).x
+
+
+/* Seed for random numbers */
+extern unsigned int adentu_srand;
+#define ADENTU_SET_SRAND(SEED) \
+    srand (SEED); srand48 (SEED); \
+    adentu_srand = SEED
 
 
 void vRand3f (vec3f *v);

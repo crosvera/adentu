@@ -24,6 +24,10 @@
 
 #include <glib.h>
 
+#include "adentu-types.h"
+#include "adentu-model.h"
+#include "adentu-grid.h"
+
 
 #define ADENTU_CUDA_THREADS 128
 
@@ -62,9 +66,15 @@
         CUDA_CALL (cudaFree (ptr))
 
 
-void adentu_cuda_reset_device (void);
+#ifdef __CUDACC__
+__device__ double atomicAdd(double* address, double val);
 
 void adentu_cuda_set_grid (dim3 *gDim, dim3 *bDim, int n);
+#endif
+
+
+void adentu_cuda_reset_device (void);
+
 
 void adentu_cuda_integrate_atoms (AdentuAtom *atoms, 
                                   AdentuGrid *grid,

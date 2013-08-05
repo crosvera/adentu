@@ -35,8 +35,8 @@ typedef struct _AdentuModel {
     double totalTime;
     double elapsedTime;
 
-    double gTemp;
-    double fTemp;
+    float gTemp;
+    float fTemp;
 
     vec3f vcmGrain;
     vec3f vcmFluid;

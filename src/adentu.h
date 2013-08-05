@@ -29,11 +29,6 @@
 #endif
 
 
-/* Seed for random numbers */
-extern unsigned int adentu_srand;
-#define ADENTU_SET_SRAND(SEED) \
-    srand (SEED); srand48 (SEED); \
-    adentu_srand = SEED
 
 /* Adentu core libs */
 #include "adentu-model.h"
@@ -46,5 +41,8 @@ extern unsigned int adentu_srand;
 
 /* Graphics */
 #include "adentu-graphic.h"
+
+/* CUDA */
+#include "adentu-cuda.h"
 
 #endif /* __ADENTU_h__ */

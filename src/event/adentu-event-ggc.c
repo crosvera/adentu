@@ -35,11 +35,12 @@
 
 #include "adentu-graphic.h"
 
-const char *ADENTU_EVENT_GGC = "ADENTU_EVENT_GGC";
+char ADENTU_EVENT_GGC[] = "ADENTU_EVENT_GGC";
 
-AdentuEventHandler AdentuGGCEventHandler = {adentu_event_ggc_init,
+AdentuEventHandler AdentuGGCEventHandler = {ADENTU_EVENT_GGC,
+                                            adentu_event_ggc_init,
                                             adentu_event_ggc_is_valid,
-                                            adentu_event_ggc_attend,
+                                            adentu_event_ggc_cuda_attend,
                                             adentu_event_ggc_get_next};
 
 
@@ -100,144 +101,6 @@ int adentu_event_ggc_is_valid (AdentuModel *model,
     return 0;
 }
 
-
-void adentu_event_ggc_attend (AdentuModel *model,
-                               AdentuEvent *event)
-{
-    AdentuAtom *grain = model->grain;
-
-    double dT = event->time - model->elapsedTime;
-
-    adentu_cuda_integrate_atoms (grain,
-                                 model->gGrid,
-                                 model->accel, dT);
-    adentu_grid_set_atoms (model->gGrid, 
-                           grain, 
-                           &model->bCond);
-
-
-    /* if graphics are set, update it*/
-    if (adentu_graphic_is_set)
-        adentu_graphic_display ();
-
-
-    int owner = event->owner;
-    int partner = event->partner;
-   
-
-    vec3f gvel = get_vec3f_from_array4f(grain->h_vel, owner);
-    vec3f fvel = get_vec3f_from_array4f(grain->h_vel, partner);
-    vec3f gpos = get_vec3f_from_array4f(grain->h_pos, owner);
-    vec3f fpos = get_vec3f_from_array4f(grain->h_pos, partner);
-    double gmass = grain->h_mass[owner];
-    double fmass = grain->h_mass[partner];
-    double gradius = grain->h_radius[owner];
-    double fradius = grain->h_radius[partner];
-
-
-    double radius = gradius + fradius;
-    vec3f pos, vel;
-    vecSub (pos, fpos, gpos);
-    vecSub (vel, fvel, gvel);
-
-    /* testing */
-    vec3f p1, p2, diffp;
-    vec3f p1p, p2p;
-    vecScale (p1, gvel, gmass);
-    vecScale (p2, fvel, fmass);
-    vec3f pAntes;
-    vecAdd (pAntes, p1, p2);
-
-    double e1, e2, diffe, eBefore;
-    e1 = gmass * vecDot (gvel, gvel);
-    e2 = fmass * vecDot (fvel, fvel);
-    eBefore = e1 + e2;
-
-
-
-    double pu = vecMod (pos);
-
-    vec3f n;
-    vecScale (n, pos, (1/pu));
-   
-    g_message ("radius: %f, pu: %f, pu-radius: %.9f\npos: (%f, %f, %f), n: (%f, %f, %f), vecDot (n, n) = %f", 
-                radius, pu, pu-radius, pos.x, pos.y, pos.z, n.x, n.y, n.z, vecDot (n, n));
-
-    if (fabs (pu - radius) > 10e-6)
-        {
-            g_error ("Bad Prediction! - PU: %f != Radius: %f", pu, radius);
-            //return ;
-        }
-
-
-
-    double VN = vecDot (n, vel);
-
-    double dP = (2 * gmass * fmass * VN) / (gmass + fmass);
-    vec3f j;
-    
-    j.x = dP * n.x;
-    j.y = dP * n.y;
-    j.z = dP * n.z;
-   
-    /* update states */
-    gvel.x = gvel.x + j.x / gmass;
-    gvel.y = gvel.y + j.y / gmass;
-    gvel.z = gvel.z + j.z / gmass;
-
-    fvel.x = fvel.x - j.x / fmass;
-    fvel.y = fvel.y - j.y / fmass;
-    fvel.z = fvel.z - j.z / fmass;
-
-    /* in cpu */
-    array4_set_vec3 (grain->h_vel, owner, gvel);
-    array4_set_vec3 (grain->h_vel, owner, fvel);
-    grain->h_nCol[owner]++;
-    grain->h_nCol[partner]++;
-
-    /* in gpu */
-    ADENTU_CUDA_MEMCPY_H2D (array4_get_ptr_at (grain->d_vel, owner), 
-                            array4_get_ptr_at (grain->h_vel, owner),
-                            4 * sizeof (adentu_real));
-
-    ADENTU_CUDA_MEMCPY_H2D (array4_get_ptr_at (grain->d_vel, partner), 
-                            array4_get_ptr_at (grain->h_vel, partner),
-                            4 * sizeof (adentu_real));
-    
-    ADENTU_CUDA_MEMCPY_H2D ((grain->d_nCol + owner),
-                            (grain->h_nCol + owner),
-                            sizeof (int));
-    
-    ADENTU_CUDA_MEMCPY_H2D ((grain->d_nCol + partner),
-                            (grain->h_nCol + partner),
-                            sizeof (int));
-    
-    /* if the above copy code doesn't work, try this: */
-    /* 
-    int gn = grain->n;
-    ADENTU_CUDA_MEMCPY_H2D (grain->d_vel, grain->h_vel, 
-                            4 * gn * sizeof (adentu_real));
-    ADENTU_CUDA_MEMCPY_H2D (grain->d_nCol, grain->h_nCol, 
-                            gn * sizeof (int));
-    */
-
-    /* testing */
-    vecScale (p1p, gvel, gmass);
-    vecScale (p2p, fvel, fmass);
-    vec3f pDespues;
-    vecAdd (pDespues, p1p, p2p);
-
-    vecSub (diffp, pDespues, pAntes);
-
-    double e1p, e2p, eAfter;
-    e1p = gmass * vecDot (gvel, gvel);
-    e2p = fmass * vecDot (fvel, fvel);
-    eAfter = e1p + e2p;
-    diffe = eAfter - eBefore;
-    
-    g_message ("Momentum vecMod(diffp): %.8f, Kinetic Energy diffe: %.8f", vecMod(diffp), diffe);
-
-}
 
 
 

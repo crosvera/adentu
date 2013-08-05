@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <glib.h>
 
-#include "vec3.h"
+#include "adentu-types.h"
 #include "adentu-atom.h"
 #include "adentu-grid.h"
 #include "adentu-model.h"
@@ -33,7 +33,7 @@
 #include "event/adentu-event-mpc-cuda.h"
 
 
-const char *ADENTU_EVENT_MPC = "ADENTU_EVENT_MPC";
+char ADENTU_EVENT_MPC[] = "ADENTU_EVENT_MPC";
 double _adentu_event_mpc_dt = 0.0;
 double _adentu_event_mpc_alpha = 3.141592653589793238462;
 

@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -29,7 +30,6 @@
 #include "event/adentu-event-bc.h"
 #include "event/adentu-event-gfc.h"
 #include "event/adentu-event-ggc.h"
-#include "event/adentu-event-usr.h"
 
 
 /* usr modules */
@@ -50,7 +50,9 @@ AdentuEventHandler *handler[] = {
 };
 */
 
-
+AdentuEventHandler *handler[] = {
+    NULL,
+};
 
 int main (int argc, char *argv[])
 {
@@ -104,19 +106,19 @@ int main (int argc, char *argv[])
     gc.type = ADENTU_GRID_DEFAULT;
 
     AdentuGrid g;
-    adentu_grid_set_from_config (&g, &gc);
+    adentu_grid_create_from_config (&g, &gc);
 
     /*set grid into the model*/
     m.gGrid = &g;
 
     /* creating fliud and MPC grid */
     AdentuGrid fg;
-    adentu_grid_set_from_config (&fg, &gc);
+    adentu_grid_create_from_config (&fg, &gc);
     m.fGrid = &fg;
 
     gc.type = ADENTU_GRID_MPC;
     AdentuGrid mpcg;
-    adentu_grid_set_from_config (&mpcg, &gc);
+    adentu_grid_create_from_config (&mpcg, &gc);
 
     m.mpcGrid = &mpcg;
 

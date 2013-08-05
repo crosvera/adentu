@@ -188,7 +188,7 @@ void adentu_graphic_display (void)
         glTranslatef (pos.x - half.x,
                       pos.y - half.y,
                       pos.z - half.z);
-        glutSolidSphere (grain->radius[i], 50, 50);
+        glutSolidSphere (grain->h_radius[i], 50, 50);
         glPopMatrix ();
     }
 
@@ -238,7 +238,7 @@ void adentu_graphic_event_loop (void)
     
     if (t != ADENTU_EVENT_END)
         {
-            handler = adentu_event_get_handler (adentu_handler, t);
+            _handler = adentu_event_get_handler (adentu_handler, t);
             if (_handler == NULL)
                 {
                     free (event->eventData);

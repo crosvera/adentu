@@ -51,7 +51,9 @@ void adentu_grid_create_from_config (AdentuGrid *grid,
 }
 
 
-void adentu_grid_set_atoms (AdentuGrid *grid, AdentuAtom *atoms, AdentuBoundaryCond *bCond)
+void adentu_grid_set_atoms (AdentuGrid *grid,
+                            AdentuAtom *atoms, 
+                            AdentuBoundaryCond *bCond)
 {
     adentu_grid_cuda_set_atoms (grid, atoms, bCond);
 }

@@ -3,6 +3,7 @@
     https://github.com/crosvera/adentu
     
     Copyright (C) 2013 Carlos Ríos Vera <crosvera@gmail.com>
+    Universidad del Bío-Bío.
 
     This program is free software: you can redistribute it and/or
     modify it under the terms of the GNU General Public License
@@ -28,9 +29,9 @@
 #include "adentu-model.h"
 #include "adentu-grid.h"
 #include "adentu-types.h"
-#include "adentu-cuda.h"
 
 extern "C" {
+    #include "adentu-cuda.h"
     #include "adentu-grid-cuda.h"
     #include "usr/atoms-pos-cuda.h"
 }
@@ -111,28 +112,25 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
             g_error ("The size of the cells is less than the size of grain radius");
 
 
-    int *g_head = gGrid->head;
-    int *f_head = fGrid->head;
-
     if (fGrid->h_linked == NULL)
         {
             fGrid->h_linked = (int *) malloc (nFluids * sizeof (int));
             ADENTU_CUDA_MALLOC (&fGrid->d_linked, nFluids * sizeof (int));
-            memset (fGrid->h_linked, -1, nFLuids * sizeof (int));
+            memset (fGrid->h_linked, -1, nFluids * sizeof (int));
             ADENTU_CUDA_MEMSET (fGrid->d_linked, -1, sizeof (int));
         }
     if (gGrid->h_linked == NULL)
         {
             gGrid->h_linked = (int *) malloc (nGrains * sizeof (int));
             ADENTU_CUDA_MALLOC (&gGrid->d_linked, nGrains * sizeof (int));
-            memset (gGrid->h_linked, -1, nFLuids * sizeof (int));
+            memset (gGrid->h_linked, -1, nFluids * sizeof (int));
             ADENTU_CUDA_MEMSET (gGrid->d_linked, -1, sizeof (int));
         }
 
     int *f_h_linked = fGrid->h_linked;
-    int *f_d_linked = fGrid->d_linked;
-    int *g_h_linked = gGrid->h_linked;
-    int *g_d_linked = gGrid->d_linked;
+    //int *f_d_linked = fGrid->d_linked;
+    //int *g_h_linked = gGrid->h_linked;
+    //int *g_d_linked = gGrid->d_linked;
 
     int *f_h_head = fGrid->h_head;
     int *f_d_head = fGrid->d_head;
@@ -181,7 +179,7 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
 
 
     ADENTU_CUDA_MEMCPY_D2H (g_h_head, g_d_head, g_tCell * sizeof (int));
-    ADENTU_CUDA_MEMCPY_D2H (g_h_pos, g_d_pos, nGrains * sizeof (adentu_real));
+    ADENTU_CUDA_MEMCPY_D2H (g_h_pos, g_d_pos, 4 * nGrains * sizeof (adentu_real));
 
 
 
@@ -268,7 +266,7 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
                             a = get_vec3f_from_array4f (g_h_pos, y);
                             if (vecMod (asdf) < radius)
                                 g_error ("cellF: %d, cellG: %d G:%d (ghead[g]: %d) F:%d\n pos[g]: %f %f %f, pos[f]: %f %f %f",
-                                x, y, y, g_head[y], awef, a.x, a.y, a.z, 
+                                x, y, y, g_h_head[y], awef, a.x, a.y, a.z, 
                                                b.x, b.y, b.z);
                         }
                     awef = f_h_linked[awef];
@@ -411,6 +409,6 @@ __global__ void adentu_usr_cuda_set_grain_pos_kernel (adentu_real *pos,
                     printf ("cPos (%d %d %d) aPos (%f %f %f)\n", 
                     cPos.x, cPos.y, cPos.z, aPos.x, aPos.y, aPos.z);*/
 
-    array4_set_vec3 (pos, atom, aPos);
+    array4_set_vec3 (pos, idx, aPos);
     head[idx] = idx;
 }

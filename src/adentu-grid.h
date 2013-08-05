@@ -103,7 +103,9 @@ typedef struct _AdentuBoundaryCond {
 void adentu_grid_create_from_config (AdentuGrid *grid, 
                                      AdentuGridConfig *conf);
 
-void adentu_grid_set_atoms (AdentuGrid *grid, AdentuAtom *atoms, AdentuBoundaryCond *bCond);
+void adentu_grid_set_atoms (AdentuGrid *grid, 
+                            AdentuAtom *atoms, 
+                            AdentuBoundaryCond *bCond);
 
 
 

@@ -26,8 +26,8 @@
 #include "adentu-event.h"
 #include "adentu-model.h"
 
-extern const char *ADENTU_EVENT_BC_GRAIN;
-extern const char *ADENTU_EVENT_BC_FLUID;
+extern char ADENTU_EVENT_BC_GRAIN[];
+extern char ADENTU_EVENT_BC_FLUID[];
 
 extern vec3f _adentu_event_bc_gVel;
 extern vec3f _adentu_event_bc_fVel;

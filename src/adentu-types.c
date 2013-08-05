@@ -24,7 +24,7 @@
 
 #include "adentu-types.h"
 
-
+unsigned int adentu_srand = 0;
 
 void vRand3f (vec3f *v)
 {
