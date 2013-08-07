@@ -121,7 +121,7 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
     e->owner = walls[x].y;
     e->partner = -1;
     e->time = times[x];
-    e->nEvents = atom->h_nCol[x];
+    e->nEvents = atom->h_nCol[e->owner];
     *(int*)e->eventData = walls[x].x;
     e->type = (type == ADENTU_ATOM_GRAIN) ? ADENTU_EVENT_BC_GRAIN : ADENTU_EVENT_BC_FLUID;
   
@@ -132,6 +132,7 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
     free (walls);
 
     cudaProfilerStop();
+
     return e;
 }
 
