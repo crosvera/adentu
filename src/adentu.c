@@ -51,6 +51,8 @@ AdentuEventHandler *handler[] = {
 */
 
 AdentuEventHandler *handler[] = {
+    &AdentuBCGrainEventHandler,
+    &AdentuBCFluidEventHandler,
     NULL,
 };
 
@@ -152,7 +154,7 @@ int main (int argc, char *argv[])
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms =  2540;
+    ac.nAtoms =  2500;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;

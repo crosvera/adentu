@@ -171,9 +171,7 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
     unsigned int tCell = grid->tCell;
     //adentu_real *h_pos = atoms->h_pos;
     adentu_real *d_pos = atoms->d_pos;
-    int *h_linked = grid->h_linked;
     int *h_head = grid->h_head;
-    int *d_linked = grid->d_linked;
     int *d_head = grid->d_head;
     int *h_cellnAtoms = grid->cells.h_nAtoms;
     int *d_cellnAtoms = grid->cells.d_nAtoms;
@@ -183,21 +181,24 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
     memset (h_cellnAtoms, 0, tCell * sizeof (int));
     memset (h_head, -1, tCell * sizeof (int));
 
-    if (h_linked == NULL)
+    if (grid->h_linked == NULL)
         {
-            ADENTU_CUDA_MALLOC (&d_linked, nAtoms * sizeof (int));
-            ADENTU_CUDA_MEMSET (d_linked, -1, nAtoms * sizeof (int));
-            h_linked = (int *) malloc (nAtoms * sizeof (int));
-            memset (h_linked, -1, nAtoms * sizeof (int));
-            grid->h_linked = h_linked;
-            grid->d_linked = d_linked;
+            ADENTU_CUDA_MALLOC (&grid->d_linked, nAtoms * sizeof (int));
+            ADENTU_CUDA_MEMSET (grid->d_linked, -1, nAtoms * sizeof (int));
+            grid->h_linked = (int *) malloc (nAtoms * sizeof (int));
+            memset (grid->h_linked, -1, nAtoms * sizeof (int));
         }
+    int *h_linked = grid->h_linked;
+    int *d_linked = grid->d_linked;
    
 
     if (grid->type ==  ADENTU_GRID_MPC)
         {
             originAux = grid->origin;
-            vecScale (displace, grid->h, drand48 ());
+            displace.x = grid->h.x * drand48 ();
+            displace.y = grid->h.y * drand48 ();
+            displace.z = grid->h.z * drand48 ();
+            //vecScale (displace, grid->h, drand48 ());
             vecAdd (grid->origin, grid->origin, displace);
         }
 
@@ -219,7 +220,7 @@ void adentu_grid_cuda_set_atoms (AdentuGrid *grid,
     
     ADENTU_CUDA_MEMCPY_D2H (h_head, d_head, tCell * sizeof (int));
     ADENTU_CUDA_MEMCPY_D2H (h_linked, d_linked, nAtoms * sizeof (int));
-    ADENTU_CUDA_MEMCPY_D2H (h_cellnAtoms, d_cellnAtoms, nAtoms * sizeof (int));
+    ADENTU_CUDA_MEMCPY_D2H (h_cellnAtoms, d_cellnAtoms, tCell * sizeof (int));
     
     if (grid->type == ADENTU_GRID_MPC)
         grid->origin = originAux;
@@ -287,9 +288,7 @@ __global__ void adentu_grid_cuda_filling_kernel (int *head,
     if (atomicCAS (&head[c], -1, idx) != -1){
         i = head[c];
         while (atomicCAS (&linked[i], -1, idx) != -1)
-            {
                 i = linked[i];
-            }
     }
     atomicAdd (&cellnAtoms[c], 1);
 }

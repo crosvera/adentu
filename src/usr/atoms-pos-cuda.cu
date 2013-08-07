@@ -48,7 +48,7 @@ int set_fluid_cell_with_particles (adentu_real *pos,
                                    vec3f origin,
                                    vec3f h,
                                    int atom,
-                                   double g_radius);
+                                   float g_radius);
 
 int set_fluid_cell_empty (adentu_real *pos,
                           int nAtoms,
@@ -80,7 +80,7 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     /* This function assume that all grain radius are the same,
      * and the fluid radius are zero.
      */
-    double radius = grain->h_radius[0];
+    float radius = grain->h_radius[0];
 
     AdentuGrid *gGrid = model->gGrid;
     AdentuGrid *fGrid = model->fGrid;
@@ -103,7 +103,6 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     int nGrains = grain->n;
     int nFluids = fluid->n;
 
-
     if (g_tCell < nGrains)
         g_error ("The number of atoms is greater than the number of grid cells.");
     if (g_h.x < radius*2 ||
@@ -115,16 +114,16 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     if (fGrid->h_linked == NULL)
         {
             fGrid->h_linked = (int *) malloc (nFluids * sizeof (int));
-            ADENTU_CUDA_MALLOC (&fGrid->d_linked, nFluids * sizeof (int));
             memset (fGrid->h_linked, -1, nFluids * sizeof (int));
-            ADENTU_CUDA_MEMSET (fGrid->d_linked, -1, sizeof (int));
+            ADENTU_CUDA_MALLOC (&fGrid->d_linked, nFluids * sizeof (int));
+            ADENTU_CUDA_MEMSET (fGrid->d_linked, -1, nFluids * sizeof (int));
         }
     if (gGrid->h_linked == NULL)
         {
             gGrid->h_linked = (int *) malloc (nGrains * sizeof (int));
+            memset (gGrid->h_linked, -1, nGrains * sizeof (int));
             ADENTU_CUDA_MALLOC (&gGrid->d_linked, nGrains * sizeof (int));
-            memset (gGrid->h_linked, -1, nFluids * sizeof (int));
-            ADENTU_CUDA_MEMSET (gGrid->d_linked, -1, sizeof (int));
+            ADENTU_CUDA_MEMSET (gGrid->d_linked, -1, nGrains * sizeof (int));
         }
 
     int *f_h_linked = fGrid->h_linked;
@@ -180,8 +179,6 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
 
     ADENTU_CUDA_MEMCPY_D2H (g_h_head, g_d_head, g_tCell * sizeof (int));
     ADENTU_CUDA_MEMCPY_D2H (g_h_pos, g_d_pos, 4 * nGrains * sizeof (adentu_real));
-
-
 
     int atom = 0;
     if (nFluids)
@@ -239,14 +236,17 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
                 } 
         }
 
-    ADENTU_CUDA_MEMCPY_H2D (f_d_head, f_h_head, f_tCell * sizeof (int));
+
+    //ADENTU_CUDA_MEMCPY_H2D (f_d_head, f_h_head, f_tCell * sizeof (int));
     ADENTU_CUDA_MEMCPY_H2D (f_d_pos, f_h_pos, nFluids * sizeof (adentu_real));
+
 
     adentu_grid_cuda_set_atoms (gGrid, grain, &model->bCond);
     adentu_grid_cuda_set_atoms (fGrid, fluid, &model->bCond);
 
 
-    g_message ("Differences between grains and fluids");
+    //testing:
+    //g_message ("Differences between grains and fluids");
     vec3f asdf, a, b;
     for (int x = 0; x < f_tCell; ++x)
         {
@@ -288,7 +288,7 @@ int set_fluid_cell_with_particles (adentu_real *pos,
                                    vec3f origin,
                                    vec3f h,
                                    int atom,
-                                   double g_radius)
+                                   float g_radius)
 {
     int count = 0;
     vec3f d;
