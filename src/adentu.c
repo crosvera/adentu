@@ -69,7 +69,7 @@ int main (int argc, char *argv[])
     /* crear modelo */
     AdentuModel m;
     vecSet (m.accel, 0.0, 0.0, 0.0);
-    m.totalTime = 50;
+    m.totalTime = 0.2;
     m.gTemp = 1.0;
     m.fTemp = 0.0;
     vecSet (m.vcmGrain, 5., 0., 0.);
@@ -103,8 +103,8 @@ int main (int argc, char *argv[])
     /* creating grain grid */
     AdentuGridConfig gc;
     vecSet (gc.origin, 0.0, 0.0, 0.0);
-    vecSet (gc.length, 3.1, 3.1, 3.1);
-    vecSet (gc.cells, 3, 3, 3);
+    vecSet (gc.length, 257.1, 257.1, 257.1);
+    vecSet (gc.cells, 8, 8, 4);
     gc.type = ADENTU_GRID_DEFAULT;
 
     AdentuGrid g;
@@ -133,7 +133,7 @@ int main (int argc, char *argv[])
 
     /* create grains */
     AdentuAtomConfig ac;
-    ac.nAtoms = 2;
+    ac.nAtoms = 256;
     ac.type = ADENTU_ATOM_GRAIN;
     ac.mass.from = ac.mass.to = 1.0;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
@@ -154,7 +154,7 @@ int main (int argc, char *argv[])
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms =  2500;
+    ac.nAtoms =  51200;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;

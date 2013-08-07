@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
+#include "cuda_profiler_api.h"
 
 
 extern "C" {
@@ -57,6 +58,8 @@ extern "C"
 AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model, 
                                             AdentuAtomType type)
 {
+
+    cudaProfilerStart();
 
     AdentuEvent *e = NULL;
     AdentuAtom *atom = NULL;
@@ -127,6 +130,7 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
     free (times);
     free (walls);
 
+    cudaProfilerStop();
     return e;
 }
 
