@@ -45,7 +45,7 @@ extern "C" {
 
 
 __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
-                                                    int *walls,
+                                                    uint2 *walls,
                                                     adentu_real *pos,
                                                     adentu_real *vel,
                                                     vec3f accel,
@@ -80,13 +80,14 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
     length = (type == ADENTU_ATOM_GRAIN) ? model->gGrid->length : model->fGrid->length;
 
     double *times, *d_times;
-    int *walls, *d_walls;
+    uint2 *walls, *d_walls;
 
-    ADENTU_CUDA_MALLOC (&d_times, nAtoms * sizeof (double));
-    ADENTU_CUDA_MALLOC (&d_walls, nAtoms * sizeof (int));
 
     dim3 gDim, bDim;
     adentu_cuda_set_grid (&gDim, &bDim, nAtoms);
+    
+    ADENTU_CUDA_MALLOC (&d_times, gDim.x * sizeof (double));
+    ADENTU_CUDA_MALLOC (&d_walls, gDim.x * sizeof (uint2));
 
     adentu_event_bc_cuda_get_bc_kernel<<<gDim, bDim>>> (d_times,
                                                          d_walls,
@@ -97,16 +98,16 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
                                                          length,
                                                          nAtoms);
 
-    times = (double *) malloc (nAtoms * sizeof (double));
-    walls = (int *) malloc (nAtoms * sizeof (int));
+    times = (double *) malloc (gDim.x * sizeof (double));
+    walls = (uint2 *) malloc (gDim.x * sizeof (uint2));
 
-    ADENTU_CUDA_MEMCPY_D2H (times, d_times, nAtoms * sizeof (double));
-    ADENTU_CUDA_MEMCPY_D2H (walls, d_walls, nAtoms * sizeof (int));
+    ADENTU_CUDA_MEMCPY_D2H (times, d_times, gDim.x * sizeof (double));
+    ADENTU_CUDA_MEMCPY_D2H (walls, d_walls, gDim.x * sizeof (uint2));
 
 
     double t = times[0];
     int x= 0;
-    for (int i=0; i < nAtoms; ++i)
+    for (int i=0; i < gDim.x; ++i)
     {
         if (times[i] < t)
             {
@@ -117,11 +118,11 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
 
     e = (AdentuEvent *) malloc (sizeof (AdentuEvent));
     e->eventData = (int *) malloc (sizeof(int));
-    e->owner = x;
+    e->owner = walls[x].y;
     e->partner = -1;
     e->time = times[x];
-    e->nEvents = atom->h_nCol[x];
-    *(int*)e->eventData = walls[x];
+    e->nEvents = atom->h_nCol[e->owner];
+    *(int*)e->eventData = walls[x].x;
     e->type = (type == ADENTU_ATOM_GRAIN) ? ADENTU_EVENT_BC_GRAIN : ADENTU_EVENT_BC_FLUID;
   
 
@@ -131,12 +132,13 @@ AdentuEvent *adentu_event_bc_cuda_get_next (AdentuModel *model,
     free (walls);
 
     cudaProfilerStop();
+
     return e;
 }
 
 
 __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
-                                                    int *walls,
+                                                    uint2 *walls,
                                                     adentu_real *pos,
                                                     adentu_real *vel,
                                                     vec3f accel,
@@ -145,7 +147,18 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
                                                     int nAtoms)
 {
 
-    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    int tid = threadIdx.x;
+    int bid = blockIdx.x;
+    int N = 64;
+
+    __shared__ double stimes[128];
+    __shared__ uint2 swalls[128];
+
+    stimes[tid] = DBL_MAX;
+    swalls[tid].x = swalls[tid].y = 0;
+
+    __syncthreads ();
 
     if (idx >= nAtoms)
         return ;
@@ -293,16 +306,37 @@ __global__ void adentu_event_bc_cuda_get_bc_kernel (double *times,
     double _min = Min (time.x, Min (time.y, time.z));
 
     if (_min == time.x)
-        walls[idx] = wall.x;
+        swalls[tid].x = (unsigned int) wall.x;
     else if (_min == time.y)
-        walls[idx] = wall.y;
+        swalls[tid].x = (unsigned int) wall.y;
     else
-        walls[idx] = wall.z;
+        swalls[tid].x = (unsigned int) wall.z;
+
+    swalls[tid].y = idx;
     
     if (_min < 0.0)
         _min = correctDT (_min);
-    times[idx] = _min;
+    stimes[tid] = _min;
 
+    __syncthreads ();
+
+    while (tid < N && N != 0)
+        {
+            if (stimes[tid] > stimes[tid + N])
+                {
+                    stimes[tid] = stimes[tid + N];
+                    swalls[tid] = swalls[tid + N];
+                }
+            N /= 2;
+        }
+
+    __syncthreads ();
+
+    if (tid == 0)
+        {
+            times[bid] = stimes[0];
+            walls[bid] = swalls[0];
+        }
     //printf (">atom: %d, time: %f, wall: %d\n", idx, times[idx], walls[idx]);
 
 }

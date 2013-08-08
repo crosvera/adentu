@@ -94,6 +94,8 @@ AdentuEvent *adentu_event_bc_fluid_get_next (AdentuModel *model)
     /* g_message ("Predicted BCF event: time: %f, wall: %s, owner: %d",
                 ev->time, AdentuCellWallTypeStr[*(int *)ev->eventData], ev->owner);
     */
+
+
     return ev;
 }
 
@@ -121,6 +123,10 @@ int adentu_event_bc_is_valid (AdentuModel *model,
             return 0;
         }
 
+    AdentuAtom *atom;
+    atom = (event->type == ADENTU_EVENT_BC_GRAIN) ? model->grain : model->fluid;
+
+
     int i = event->owner;
     int ne = event->nEvents;
 
@@ -132,21 +138,13 @@ int adentu_event_bc_is_valid (AdentuModel *model,
             return 0;
         }
 
-    if (event->type == ADENTU_EVENT_BC_GRAIN && 
-        ne == model->grain->h_nCol[i])
+    if (ne == atom->h_nCol[i])
         {   
             //g_message ("Validating BC event: Valid");
             return 1;
         }
-    else 
-    if (event->type == ADENTU_EVENT_BC_FLUID && 
-        ne == model->fluid->h_nCol[i]) 
-        {
-            //g_message ("Validating BC event: Valid");
-            return 1;
-        }
 
-    //g_message ("Validating BC event: Invalid nCol");
+
     return 0;
 }
 
