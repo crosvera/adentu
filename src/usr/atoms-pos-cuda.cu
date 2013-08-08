@@ -265,7 +265,7 @@ __global__ void set_fluid_cell_kernel (adentu_real *pos,
     unsigned int tCell = nCell.x * nCell.y * nCell.z;
 
     /*get cell*/
-    unsigned int i = (unsigned int) floor (tCell * curand_uniform_double (&localS));
+    unsigned int i = (unsigned int) floor (tCell * curand_uniform (&localS));
 
     do {
         d.x = h.x * (curand_uniform_double (&localS) - 0.5);
