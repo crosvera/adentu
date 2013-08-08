@@ -154,7 +154,7 @@ int main (int argc, char *argv[])
 
     /****************************************************/
     /* creating fluid*/
-    ac.nAtoms =  51200;
+    ac.nAtoms =  512000;
     ac.type = ADENTU_ATOM_FLUID;
     ac.mass.from = ac.mass.to = 0.5;
     ac.mass.rangeType = ADENTU_PROP_CONSTANT;
@@ -205,7 +205,7 @@ int main (int argc, char *argv[])
 
 
     //adentu_runnable_add_pre_func (&m, print_pre_event);
-    adentu_runnable_add_post_func (&m, print_event);
+    //adentu_runnable_add_post_func (&m, print_event);
     //adentu_runnable_add_post_func (&m, print_post_event);
 
     /* setup event engine */

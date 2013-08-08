@@ -19,7 +19,7 @@
 */
 
 #include <cuda.h>
-#include <curand.h>
+#include <curand_kernel.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,9 +28,11 @@
 #include "adentu-atom.h"
 #include "adentu-model.h"
 #include "adentu-grid.h"
-#include "adentu-types.h"
+
 
 extern "C" {
+    #include "adentu-types.h"
+    #include "adentu-types-cuda.h"
     #include "adentu-cuda.h"
     #include "adentu-grid-cuda.h"
     #include "usr/atoms-pos-cuda.h"
@@ -39,26 +41,6 @@ extern "C" {
 
 
 
-
-int set_fluid_cell_with_particles (adentu_real *pos,
-                                   int nAtoms,
-                                   int Nfcg,
-                                   int cell,
-                                   vec3i nCell,
-                                   vec3f origin,
-                                   vec3f h,
-                                   int atom,
-                                   float g_radius);
-
-int set_fluid_cell_empty (adentu_real *pos,
-                          int nAtoms,
-                          int Nfce,
-                          int cell,
-                          vec3i nCell,
-                          vec3f origin,
-                          vec3f h,
-                          int atom);
-
 __global__ void adentu_usr_cuda_set_grain_pos_kernel (adentu_real *pos,
                                                       int *head,
                                                       int nAtoms,
@@ -66,6 +48,16 @@ __global__ void adentu_usr_cuda_set_grain_pos_kernel (adentu_real *pos,
                                                       vec3f origin,
                                                       vec3f h);
 
+__global__ void set_seed_kernel (curandState *states, unsigned long seed, int n);
+
+__global__ void set_fluid_cell_kernel (adentu_real *pos,
+                                       int nAtoms,
+                                       vec3i nCell,
+                                       vec3f h,
+                                       vec3f origin,
+                                       int *gHead,
+                                       float gRadius,
+                                       curandState *states);
 
 
 
@@ -126,7 +118,7 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
             ADENTU_CUDA_MEMSET (gGrid->d_linked, -1, nGrains * sizeof (int));
         }
 
-    int *f_h_linked = fGrid->h_linked;
+    //int *f_h_linked = fGrid->h_linked;
     //int *f_d_linked = fGrid->d_linked;
     //int *g_h_linked = gGrid->h_linked;
     //int *g_d_linked = gGrid->d_linked;
@@ -180,61 +172,26 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     ADENTU_CUDA_MEMCPY_D2H (g_h_head, g_d_head, g_tCell * sizeof (int));
     ADENTU_CUDA_MEMCPY_D2H (g_h_pos, g_d_pos, 4 * nGrains * sizeof (adentu_real));
 
-    int atom = 0;
-    if (nFluids)
-    for (int c = 0; c < g_tCell; ++c)
-        {
-            if (gGrid->h_head[c] != -1)
-                atom = set_fluid_cell_with_particles (f_h_pos,
-                                                      nFluids,
-                                                      Nfcg,
-                                                      c,
-                                                      g_nCell,
-                                                      g_origin,
-                                                      g_h,
-                                                      atom,
-                                                      radius);
-            else
-                atom = set_fluid_cell_empty (f_h_pos,
-                                             nFluids,
-                                             Nfce,
-                                             c,
-                                             g_nCell,
-                                             g_origin,
-                                             g_h,
-                                             atom);
-        } 
 
+    curandState *d_states;
+    ADENTU_CUDA_MALLOC (&d_states, nFluids * sizeof (curandState));
+    
+    adentu_cuda_set_grid (&gDim, &bDim, nFluids);
 
-    int awef = nFluids - atom;
-    while (awef)
-        {
-            for (int c = 0; c < g_tCell; ++c)
-                {
-                    if (gGrid->h_head[c] != -1)
-                        atom = set_fluid_cell_with_particles (f_h_pos,
-                                                              nFluids,
-                                                              1,
-                                                              c,
-                                                              g_nCell,
-                                                              g_origin,
-                                                              g_h,
-                                                              atom,
-                                                              radius);
-                    else
-                        atom = set_fluid_cell_empty (f_h_pos,
-                                                     nFluids,
-                                                     1,
-                                                     c,
-                                                     g_nCell,
-                                                     g_origin,
-                                                     g_h,
-                                                     atom);
-                    awef--;
-                    if (!awef)
-                        break ;
-                } 
-        }
+    set_seed_kernel<<<gDim, bDim>>> (d_states, 
+                                     adentu_srand, 
+                                     nFluids);
+
+    set_fluid_cell_kernel<<<gDim, bDim>>> (f_d_pos,
+                                           nFluids,
+                                           g_nCell,
+                                           g_h,
+                                           g_origin,
+                                           g_d_head,
+                                           radius,
+                                           d_states);
+
+    ADENTU_CUDA_FREE (d_states);
 
 
     //ADENTU_CUDA_MEMCPY_H2D (f_d_head, f_h_head, f_tCell * sizeof (int));
@@ -245,9 +202,10 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
     adentu_grid_cuda_set_atoms (fGrid, fluid, &model->bCond);
 
 
-    //testing:
+    /*//testing:
     //g_message ("Differences between grains and fluids");
     vec3f asdf, a, b;
+    int awef;
     for (int x = 0; x < f_tCell; ++x)
         {
             //g_message ("fCell: %d", x);
@@ -272,112 +230,64 @@ void adentu_usr_cuda_set_atoms_pos (AdentuModel *model)
                     awef = f_h_linked[awef];
                 }
         }
+        */
+        
 }
 
-
-
-
-
-
-
-int set_fluid_cell_with_particles (adentu_real *pos,
-                                   int nAtoms,
-                                   int Nfcg,
-                                   int cell,
-                                   vec3i nCell,
-                                   vec3f origin,
-                                   vec3f h,
-                                   int atom,
-                                   float g_radius)
+__global__ void set_seed_kernel (curandState *states, unsigned long seed, int n)
 {
-    int count = 0;
-    vec3f d;
-    double r;
-    vec3i cPos;
-    vec3f aPos;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx >= n)
+        return ;
 
-    if (!Nfcg)
-        return atom;
+    curand_init (seed, idx, 0, &states[idx]);
 
-    do
-    {
-        d.x = h.x * (drand48 () - 0.5);
-        d.y = h.y * (drand48 () - 0.5);
-        d.z = h.z * (drand48 () - 0.5);
-        
-        r = sqrt (d.x*d.x + d.y*d.y + d.z*d.z);
-        if (r > g_radius)
-            {
-                /* 
-                if (atom == 1)
-                    printf ("d (%f, %f, %f), cell: %d, nCell: (%d, %d, %d)\n", 
-                            d.x, d.y, d.z, cell, nCell.x, nCell.y, nCell.z);
-                */
-                cPos.z = cell / (nCell.x * nCell.y);
-                cPos.y = (cell % (nCell.x * nCell.y)) / nCell.x;
-                cPos.x = (cell % (nCell.x * nCell.y)) % nCell.x;
-
-                vecSet (aPos, cPos.x * h.x + origin.x + h.x/2 + d.x,
-                              cPos.y * h.y + origin.y + h.y/2 + d.y,
-                              cPos.z * h.z + origin.z + h.z/2 + d.z);
-                /*
-                if (atom == 1)
-                    printf ("cPos (%d %d %d) aPos (%f %f %f)\n", 
-                            cPos.x, cPos.y, cPos.z, aPos.x, aPos.y, aPos.z);
-                */
-
-                array4_set_vec3 (pos, atom, aPos);
-                ++atom;
-                ++count;
-            }
-    } 
-    while (count < Nfcg);
-
-
-    return atom;
 }
 
 
-int set_fluid_cell_empty (adentu_real *pos,
-                          int nAtoms,
-                          int Nfce,
-                          int cell,
-                          vec3i nCell,
-                          vec3f origin,
-                          vec3f h,
-                          int atom)
+__global__ void set_fluid_cell_kernel (adentu_real *pos,
+                                       int nAtoms,
+                                       vec3i nCell,
+                                       vec3f h,
+                                       vec3f origin,
+                                       int *gHead,
+                                       float gRadius,
+                                       curandState *states)
 {
-    int count = 0;
-    vec3f d;
+    int idx = threadIdx.x + blockIdx.x * blockDim.x;
+    if (idx >= nAtoms)
+        return ;
+    
+    curandState localS = states[idx];
     vec3i cPos;
-    vec3f aPos;
+    vec3f aPos, d;
+    float r;
+    unsigned int tCell = nCell.x * nCell.y * nCell.z;
 
-    if (!Nfce)
-        return atom;
+    /*get cell*/
+    unsigned int i = (unsigned int) floor (tCell * curand_uniform_double (&localS));
 
-    do
-    {
-        d.x = h.x * (drand48 () - 0.5);
-        d.y = h.y * (drand48 () - 0.5);
-        d.z = h.z * (drand48 () - 0.5);
-        
-        cPos.z = cell / (nCell.x * nCell.y);
-        cPos.y = (cell % (nCell.x * nCell.y)) / nCell.x;
-        cPos.x = (cell % (nCell.x * nCell.y)) % nCell.x;
-        
-        vecSet (aPos, cPos.x * h.x + origin.x + h.x/2 + d.x,
-                      cPos.y * h.y + origin.y + h.y/2 + d.y,
-                      cPos.z * h.z + origin.z + h.z/2 + d.z);
+    do {
+        d.x = h.x * (curand_uniform_double (&localS) - 0.5);
+        d.y = h.y * (curand_uniform_double (&localS) - 0.5);
+        d.z = h.z * (curand_uniform_double (&localS) - 0.5);
+        r = vecMod (d);
+    } while (gHead[i] != -1 && r < gRadius);
 
-        array4_set_vec3 (pos, atom, aPos);
-        ++atom;
-        ++count;
-    } 
-    while (count < Nfce);
+    cPos.z = i / (nCell.x * nCell.y);
+    cPos.y = (i % (nCell.x * nCell.y)) / nCell.x;
+    cPos.x = (i % (nCell.x * nCell.y)) % nCell.x;
+    
+    vecSet (aPos, cPos.x * h.x + origin.x + h.x/2 + d.x,
+                  cPos.y * h.y + origin.y + h.y/2 + d.y,
+                  cPos.z * h.z + origin.z + h.z/2 + d.z);
 
-    return atom;
+    array4_set_vec3 (pos, idx, aPos);
+
+    //printf ("i: %d, idx: %d, pos: %f, %f, %f\n", i, idx, aPos.x, aPos.y, aPos.z);
+
 }
-
+                                       
 
 __global__ void adentu_usr_cuda_set_grain_pos_kernel (adentu_real *pos,
                                                       int *head,
